@@ -1,4 +1,4 @@
-SUGAR package 
+#SUGAR package 
 
 The Supernova Useful Generator And Reconstructor training code 
 
