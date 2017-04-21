@@ -4,9 +4,13 @@
 Some description
 """
 
-import os
-import glob
+#import os
+#import glob
 
 # Automatically import all modules (python files)
-__all__ = [os.path.basename(m).replace('.py', '') for m in glob.glob("sugar/*.py")
-           if '__init__' not in m]
+#__all__ = [os.path.basename(m).replace('.py', '') for m in glob.glob("sugar/*.py")
+#           if '__init__' not in m]
+
+
+from .emfa_analysis import emfa_si_analysis
+

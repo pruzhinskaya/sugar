@@ -33,7 +33,7 @@ from ToolBox import Astro
 import copy
 import cPickle
 import scipy.interpolate as inter
-import EMfa_covariant_first as EMfa_cov
+import emfa_covariant as EMfa_cov
 
 
 def extract_block_diag(A,size_bloc,number_bloc):
