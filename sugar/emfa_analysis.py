@@ -1,8 +1,7 @@
 """Realize emfa on spectrale features space."""
 
-
 import numpy as N
-import copy 
+import copy
 import emfa as EM_manu
 
 

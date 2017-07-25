@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Some description
+Some description.
 """
 
 #import os
@@ -11,6 +11,6 @@ Some description
 #__all__ = [os.path.basename(m).replace('.py', '') for m in glob.glob("sugar/*.py")
 #           if '__init__' not in m]
 
+from .load_data import load_data_sugar
 
 from .emfa_analysis import emfa_si_analysis
-
