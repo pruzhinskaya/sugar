@@ -13,4 +13,3 @@ Some description.
 
 from .load_data import load_data_sugar
 
-from .emfa_analysis import emfa_si_analysis
