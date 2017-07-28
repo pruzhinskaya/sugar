@@ -73,10 +73,11 @@ class load_data_sugar:
             self.spectra_phases.update({self.sn_name[i]: {}})
 
             for t in range(len(dic[self.sn_name[i]].keys())):
-                self.spectra[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['Y']})
-                self.spectra_variance[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['V']})
-                self.spectra_wavelength[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['X']})
-                self.spectra_phases[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['phase_salt2']})
+                if dic[self.sn_name[i]]['%i'%t]['phase_salt2'] < 50.:
+                    self.spectra[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['Y']})
+                    self.spectra_variance[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['V']})
+                    self.spectra_wavelength[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['X']})
+                    self.spectra_phases[self.sn_name[i]].update({'%i'%t: dic[self.sn_name[i]]['%i'%t]['phase_salt2']})
 
     def load_spectra_at_max(self, file_at_max=None):
         """
