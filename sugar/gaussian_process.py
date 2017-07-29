@@ -3,6 +3,7 @@
 import numpy as np
 import cosmogp
 import sugar
+import cPickle
 import os
 
 
@@ -15,12 +16,13 @@ class load_data_bin_gp:
         self.lds = sugar.load_data_sugar()
         self.lds.load_spectra()
 
+        self.wavelength = self.lds.spectra_wavelength[self.lds.sn_name[0]]['0']
+
         self.sn_name = self.lds.sn_name
 
         self.y = []
         self.y_err = []
         self.time = []
-        self.wavelength = []
 
         self.mean_time = []
         self.mean = []
@@ -35,7 +37,6 @@ class load_data_bin_gp:
         self.y = []
         self.y_err = []
         self.time = []
-        self.wavelength = []
 
         for i in range(len(self.sn_name)):
 
@@ -50,12 +51,10 @@ class load_data_bin_gp:
                 y[j] = self.lds.spectra[self.sn_name[i]]['%i'%j][number_bin]
                 y_err[j] = np.sqrt(self.lds.spectra_variance[self.sn_name[i]]['%i'%j])[number_bin]
                 time[j] = self.lds.spectra_phases[self.sn_name[i]]['%i'%j]
-                wavelength[j] = self.lds.spectra_wavelength[self.sn_name[i]]['%i'%j][number_bin]
 
             self.y.append(y)
             self.y_err.append(y_err)
             self.time.append(time)
-            self.wavelength.append(wavelength)
 
 
     def load_mean_bin(self, number_bin, mean_file=None):
@@ -152,9 +151,17 @@ class gp_sed:
 
         self.ldbg = load_data_bin_gp()
         self.ldbg.build_difference_mean()
+
+        self.wavelength = self.ldbg.wavelength
+        
         self.diff = self.ldbg.diff
-        self.sigma = np.zeros(190)
-        self.l = np.zeros(190)
+        
+        self.sigma = np.zeros(len(self.wavelength))
+        self.l = np.zeros(len(self.wavelength))
+
+        self.pull_std = np.zeros(len(self.wavelength))
+        self.pull_average = np.zeros(len(self.wavelength))
+        self.pull_number_point = np.zeros(len(self.wavelength))
 
     def gaussian_process_regression(self):
         """
@@ -163,7 +170,10 @@ class gp_sed:
         compute hyperparameter and full interpolation.
         compute covariance matrix also. 
         """
-        for i in range(190):
+        path = os.path.dirname(sugar.__file__)
+        output_directory = path + '/data_output/gaussian_process/'
+        
+        for i in range(len(self.wavelength)):
 
             print i+1
 
@@ -175,25 +185,64 @@ class gp_sed:
                                                    Time_mean=self.ldbg.mean_time, substract_mean=False)
 
             gpr.nugget = 0.03
+
             gpr.find_hyperparameters(hyperparameter_guess=[0.5,8.], nugget=False, svd_method=self.svd_method)
             gpr.get_prediction(new_binning=self.grid_interpolation, COV=True, svd_method=self.svd_method)
             self.sigma[i] = gpr.hyperparameters[0]
             self.l[i] = gpr.hyperparameters[1]
 
-            #BP= build_pull(LCMC.Y,LCMC.Y_err,LCMC.TIME,LCMC.Time_Mean,LCMC.Mean,GP.hyperparameters['sigma'],GP.hyperparameters['l'])
-            #BP.compute_pull(diFF=LCMC.difference)
+            bp = cosmogp.build_pull(self.ldbg.y,self.ldbg.time,gpr.hyperparameters,
+                                    y_err=self.ldbg.y_err, nugget=0.03, y_mean=self.ldbg.mean,
+                                    x_axis_mean=self.ldbg.mean_time, kernel='RBF1D')
+            bp.compute_pull(diff=self.diff, svd_method=False)
 
-            #dic={'Prediction':GP.Prediction,
-            #     'Covariance':GP.covariance_matrix,
-            #     'Hyperparametre':GP.hyperparameters,
-            #     'Hyperparametre_cov':GP.hyperparameters_Covariance,
-            #     'Time':GP.new_binning,
-            #     'wavelength':N.mean(LCMC.wavelength[0]),
-            #     'pull_per_supernovae':BP.pull,
-            #     'global_pull':BP.PULL,
-            #     'Moyenne_pull':BP.Moyenne_pull,
-            #     'ecart_tupe_pull':BP.ecart_type_pull,
-            #     'sn_name':LCMC.sn_name}
+            self.pull_average[i] = bp.pull_average
+            self.pull_std[i] = bp.pull_std
+            self.pull_number_point[i] = len(bp.pull)
+
+            filegp = open(output_directory+'prediction_bin_%i.pkl'%(i),'w')
+            
+            dic = {'prediction': gpr.Prediction,
+                   'covariance': gpr.covariance_matrix,
+                   'time': gpr.new_binning,
+                   'wavelength':self.wavelength[i],
+                   'sn_name':self.ldbg.sn_name}
+
+            cPickle.dump(dic, filegp)
+            filegp.close()
+            del dic
+
+    def write_output(self):
+        """
+        write output from gp interpolation.
+        """
+        path = os.path.dirname(sugar.__file__)
+        output_directory = path + '/data_output/gaussian_process/'
+
+        for sn in range(len(self.ldbg.sn_name)): 
+
+            dic = cPickle.load(open(output_directory+'prediction_bin_0.pkl'))
+            fichier = open(output_directory+self.ldbg.sn_name[sn]+'.predict','w')
+
+            if type(dic['time']) == list:
+                time = dic['time'][sn]
+            else:
+                time = dic['time']
+
+            for Bin in range(len(self.wavelength)):
+                print Bin
+                dic=cPickle.load(open(output_directory + 'prediction_bin_%i.pkl'%(Bin)))
+                for t in range(len(time)):
+                    fichier.write('%.5f    %.5f    %.5f'%((time[t], dic['wavelength'], dic['prediction'][sn][t])))
+                    for tt in range(len(time)):
+                        if tt == (len(time)-1):
+                            fichier.write('    %.5f \n'%(dic['covariance'][sn][t, tt]))
+                        else:
+                            fichier.write('    %.5f'%(dic['covariance'][sn][t, tt]))
+            fichier.close()
+
+        os.system('rm '+output_directory.replace(' ','%s '%('\\'))+ '*.pkl')
+            
 
 
 if __name__=="__main__":
@@ -202,4 +251,5 @@ if __name__=="__main__":
     gp = gp_sed()
     A = time.time()
     gp.gaussian_process_regression()
+    gp.write_output()
     B = time.time()
