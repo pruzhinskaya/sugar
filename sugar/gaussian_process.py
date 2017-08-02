@@ -251,5 +251,5 @@ if __name__=="__main__":
     gp = gp_sed()
     A = time.time()
     gp.gaussian_process_regression()
-    gp.write_output()
+    #gp.write_output()
     B = time.time()
