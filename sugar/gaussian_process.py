@@ -151,6 +151,7 @@ class gp_sed:
 
         self.ldbg = load_data_bin_gp()
         self.ldbg.build_difference_mean()
+        self.sn_name = self.ldbg.sn_name
 
         self.wavelength = self.ldbg.wavelength
         
@@ -163,6 +164,14 @@ class gp_sed:
         self.pull_average = np.zeros(len(self.wavelength))
         self.pull_number_point = np.zeros(len(self.wavelength))
 
+        self.dic = {}
+
+        for sn in range(len(self.sn_name)):
+            self.dic.update({self.sn_name[sn]:{}})
+            for wave in range(len(self.wavelength)):
+                self.dic[self.sn_name[sn]].update({'bin%i'%(wave):{}})
+        
+
     def gaussian_process_regression(self):
         """
         Fit hyperparameter and interpolation for the full sed.
@@ -170,12 +179,9 @@ class gp_sed:
         compute hyperparameter and full interpolation.
         compute covariance matrix also. 
         """
-        path = os.path.dirname(sugar.__file__)
-        output_directory = path + '/data_output/gaussian_process/'
-        
         for i in range(len(self.wavelength)):
 
-            print i+1
+            print i+1,'/',len(self.wavelength)
 
             self.ldbg.load_data_bin(i)
             self.ldbg.load_mean_bin(i)
@@ -200,17 +206,13 @@ class gp_sed:
             self.pull_std[i] = bp.pull_std
             self.pull_number_point[i] = len(bp.pull)
 
-            filegp = open(output_directory+'prediction_bin_%i.pkl'%(i),'w')
-            
-            dic = {'prediction': gpr.Prediction,
-                   'covariance': gpr.covariance_matrix,
-                   'time': gpr.new_binning,
-                   'wavelength':self.wavelength[i],
-                   'sn_name':self.ldbg.sn_name}
+            for sn in range(len(self.sn_name)):
 
-            cPickle.dump(dic, filegp)
-            filegp.close()
-            del dic
+                dic = {'prediction': gpr.Prediction[sn],
+                       'covariance': gpr.covariance_matrix[sn],
+                       'time': gpr.new_binning,
+                       'wavelength':self.wavelength[i]}
+                self.dic[self.sn_name[sn]]['bin%i'%(i)].update(dic)
 
     def write_output(self):
         """
@@ -219,31 +221,18 @@ class gp_sed:
         path = os.path.dirname(sugar.__file__)
         output_directory = path + '/data_output/gaussian_process/'
 
-        for sn in range(len(self.ldbg.sn_name)): 
+        fichier = open(output_directory+'sed_snia_gaussian_process.pkl','w')
+        cPickle.dump(self.dic, fichier)
+        fichier.close()
 
-            dic = cPickle.load(open(output_directory+'prediction_bin_0.pkl'))
-            fichier = open(output_directory+self.ldbg.sn_name[sn]+'.predict','w')
+        gp_files = open(output_directory+'gp_info.dat','w')
+        gp_files.write('#wavelength kernel_amplitude correlation_length pull_average pull_std pull_number_of_points \n')
 
-            if type(dic['time']) == list:
-                time = dic['time'][sn]
-            else:
-                time = dic['time']
+        for wave in range(len(self.wavelength)):
+            gp_files.write('%.5f %.5f %.5f %.5f %.5f %.5f \n'%((self.wavelength[wave],self.sigma[wave],self.l[wave],
+                                                                self.pull_average[wave],self.pull_std[wave],self.pull_number_point[wave])))
 
-            for Bin in range(len(self.wavelength)):
-                print Bin
-                dic=cPickle.load(open(output_directory + 'prediction_bin_%i.pkl'%(Bin)))
-                for t in range(len(time)):
-                    fichier.write('%.5f    %.5f    %.5f'%((time[t], dic['wavelength'], dic['prediction'][sn][t])))
-                    for tt in range(len(time)):
-                        if tt == (len(time)-1):
-                            fichier.write('    %.5f \n'%(dic['covariance'][sn][t, tt]))
-                        else:
-                            fichier.write('    %.5f'%(dic['covariance'][sn][t, tt]))
-            fichier.close()
-
-        os.system('rm '+output_directory.replace(' ','%s '%('\\'))+ '*.pkl')
-            
-
+        gp_files.close()
 
 if __name__=="__main__":
 
@@ -251,5 +240,5 @@ if __name__=="__main__":
     gp = gp_sed()
     A = time.time()
     gp.gaussian_process_regression()
-    #gp.write_output()
+    gp.write_output()
     B = time.time()
