@@ -19,117 +19,7 @@ import scipy as S
 import copy
 
 
-def generate_example_1(nobs):
-    """
-    The first example is a simple model where
-    x = N.random.normal (signal)
-    y = x + N.random.normal (noise)
-    """
-    Lambda = N.array(((1, 1), (1, -1))) / N.sqrt(2)
-    Eigvals = N.array((1, 0))
-    sigma = N.array((N.ones(nobs), N.ones(nobs) * 1.e-5)).T
-
-    return generate_mock_data(nobs, Lambda, Eigvals, sigma)
-
-
-def generate_bailey_example():
-    """
-    This generates the example found under SJB code
-    https://github.com/sbailey/empca
-    """
-    N.random.seed(1)
-    nobs = 100
-    nvar = 200
-    nvec = 3
-    data = N.zeros(shape=(nobs, nvar))
-
-    #- Generate data
-    x = N.linspace(0, 2 * N.pi, nvar)
-    for i in range(nobs):
-        for k in range(nvec):
-            c = N.random.normal()
-            data[i] += 5.0 * nvec / (k + 1) ** 2 * c * N.sin(x * (k + 1))
-
-    #- Add noise
-    sigma = N.ones(shape=data.shape)
-    for i in range(nobs / 10):
-        sigma[i] *= 5
-        sigma[i, 0:nvar / 4] *= 5
-
-    weights = 1.0 / sigma ** 2
-    noise = N.random.normal(scale=sigma)
-    noisy_data = data + noise
-    return noisy_data, weights, noise
-
-
-def generate_example_2(nobs, nvar, nvec, noise=True):
-    """
-    nobs : the number of independent observations
-    nvar : the dimensionality of the observation space
-    nvec : the number of orthogonal independent vectors
-    """
-    assert nvar >= nvec, "nvar=%d should be higher than nvec=%d" % (nvar, nvec)
-    # Lambda is the orthogonal matrix of eigen vectors
-    # Eigen vector i is given by Lambda[:,i]
-    Lambda = N.cos(
-        N.outer(N.linspace(0, 2 * N.pi, nvar + 1)[:-1], N.arange(nvec)))
-    # ensure the normalization
-    Lambda /= N.sqrt(N.sum(Lambda ** 2, axis=0))
-    Eigvals = 1. / (N.arange(nvec) + 1) ** 2
-
-    # noise definition and generation
-    sigma = N.ones((nobs, nvar)) / 4.
-    sigma[::4][:, ::4] *= 4
-    sigma[::4] *= 4
-    if not noise:
-        sigma *= 0
-
-    return generate_mock_data(nobs, Lambda, Eigvals, sigma)
-
-
-def generate_example_3(nobs):
-    """
-    This is a 3-D example, noise is 2,1,.5, and the rotation matrix is random
-"""
-    Lambda = _random_orthonormal(3, 3, seed=1)
-    Eigvals = (2. ** N.arange(3)) ** 2
-    sigma = N.outer(N.ones(nobs), 2. ** N.arange(3))
-    return generate_mock_data(nobs, Lambda, Eigvals, sigma)
-
-
-def generate_mock_data(nobs, lbda, Eigvals, sigma):
-    """
-    generates nobs data, ditributed as
-    X = Normal (0, lbda^T x diag(Eigvals) x lbda + sigma^2)
-
-    Returns a dictionary containing
-        'X' : nobs x nvar array of realised values
-        'Z' : realised values of the hidden varibale 'Z'
-        'noise' : realised value of the noise
-        'sigma' , 'lbda' and 'Eigvals' : are propagated for convenience
-    """
-    # data generation :
-    N.random.seed(1)
-    # internal unknown true parameter in PCA space
-    # by definition, Cov(Z)=I
-    # Z[i] it the vector for measurement i
-    Z = N.random.normal(size=(nobs, N.shape(lbda)[1]))
-
-    # noise definition and generation
-    noise = N.random.normal(size=N.shape(sigma)) * sigma
-
-    # the data :
-    # X[i] is the vector of observations for measurement i
-    X = N.dot(lbda, (Z * N.sqrt(Eigvals)).T).T + noise
-    # X=0
-
-    # returning all values
-    return {'X': X, 'sigma': sigma, 'Z': Z, 'noise': noise,
-            'Lambda': lbda, 'Eigvals': Eigvals}
-
-
 class EMPCA:
-
     """
 This is the wrapper class to store input data and perform computation
 Usage:
@@ -143,8 +33,7 @@ solver.converge(nvec,niter)
     niter : number of iterations
     will return the eigen values and eigenvectors as in numpy.linalg.eig
     It can be made reentrant with solver.converge(nvec,niter,Lambda_init=solver.Lambda)
-"""
-
+    """
     def __init__(self, data, weights):
         assert len(N.shape(
             data)) == 2, "data shall be a 2-dim array, got %i dim" % \
@@ -324,22 +213,6 @@ solver.converge(nvec,niter)
             self.Lambda -= dLambda * f / df
         return f, df  # useful for debug purposes
 
-    # def __ortho_and_normalize_Lambda(self):
-        # ensure XXt = LLt + Psi
-        # by projecting on LtX (which is only an approximation
-        # TODO : de-bruteforce it !
-        # empca.X.T.dot(empca.X)/len(empca.X)
-        # self.orthogonalize_Lambda()
-        # alpha=N.zeros(self.nvec)
-        # for i,l in enumerate(self.Lambda.T):
-        #    l4=l.dot(l)**2
-        #    lpl=(l/self.Psim1_org).dot(l)
-        #    lxxl= l.dot(self.X.T)**2
-        #    f=-N.sum( 1/(l4+lpl) ) + N.sum( lxxl/(l4+lpl)**2 )
-        #    df=N.sum( (2*l4+lpl)/(l4+lpl)**2 ) + N.sum( lxxl/(l4+lpl)**2 ) - 2*  N.sum( lxxl*(2*l4+lpl)/(l4+lpl)**3 )
-        #    alpha[i]=-f/df
-        #alpha[alpha<-0.99] = -0.5
-        #self.Lambda *= N.sqrt(1+alpha)
 
     def normalize_Lambda(self):
         """ Newton-Raphson Likelihood maximization on alpha_i L_i L_i^t
@@ -370,14 +243,6 @@ solver.converge(nvec,niter)
         if self.verbose:
             print prettyalpha
         return f, df, alpha  # for convergence purposes
-
-    # def __renorm_Lambda(self):
-        # ensure that Sum Tr(XtP-1X) = Sum Tr (ILPL)
-        # this is only approximate
-        #self.chi2_xx = N.zeros(self.nobs)
-        # for i in xrange(self.nobs):
-        #    self.chi2_xx[i] = (self.X[i].T*self.Psim1[i]).dot(self.X[i])
-        # return N.trace(N.sum(self.ILPL,axis=0)) / N.sum(self.chi2_xx)
 
     def orthogonalize_Lambda(self):
         """ transform Lambda in an array of orthogonal vectors respecting LLt = Cte
@@ -436,15 +301,6 @@ solver.converge(nvec,niter)
             LLPm1X = N.dot(LLPm1, self.X[i])
             f += N.diag(-LLPm1) + LLPm1X ** 2
             df += LLPm1 ** 2 - 2 * N.outer(LLPm1X, LLPm1X) * LLPm1
-
-        # original (slow) version
-        #
-        # self.store_LLPm1()
-        #LLPm1X = N.array([N.dot(a,b) for a,b in zip(self.LLPm1,self.X)])
-        #f = N.diag( -N.sum(self.LLPm1,axis=0) ) +N.sum(LLPm1X**2,axis=0 )
-        ##df[j,k] = N.sum ( N.outer(LLPm1[i,k],LLPm1[i,k])[j,j] - 2 * N.outer(LLPm1[i,k],LLPm1[i,k]).dot(N.outer(self.X[i],self.X[i])).dot(LLPm1[i])[j,j] for i in xrange(self.nobs)  )
-        # witch can be rewritten in a simpler form as
-        #df = N.sum(self.LLPm1**2,axis=0) - 2* N.sum([N.outer(LLPm1X[i],LLPm1X[i])*self.LLPm1[i] for i in xrange(self.nobs)],axis=0)
 
         deltaPsi0 = - N.linalg.solve(df, f)
         self.Psi0[deltaPsi0 * f > 0] += deltaPsi0[deltaPsi0 * f > 0]
@@ -589,91 +445,4 @@ solver.converge(nvec,niter)
             if renorm == True:
                 self.normalize_Lambda()
 
-        # in some cases ( no noise in input data on a given hyperplane) the solution is not optimal
-        # This should not happen given the initial conditions, but I leave the
-        # code in case
-        """
-        save_Lambda = copy.copy(self.Lambda)
-        valp,vecp=self.orthogonalize_LZZL()
-        self.Lambda= vecp*N.sqrt(valp)
-        log_L_zzl,chi2_tot = self.log_likelihood()
-        if log_L_zzl > log_L :
-            print "%2d/%d logL=%f Chi2=%f "%(i,niter,log_L_zzl,chi2_tot)
-            return valp,vecp
-        else:
-            self.Lambda=save_Lambda
-            return self.orthogonalize_Lambda()
-        """
-        # return self.orthogonalize_Lambda()
 
-
-################ dev around SBJ code ############
-
-try:
-    from empca_bailey import *
-    from empca_bailey import _random_orthonormal
-
-    def empca_alt(data, weights=None, maxiter=1000, nvec=5, smooth=0,
-                  randseed=1, precision=0.1, eigvec_init=None):
-        """
-    Iteratively solve data[i] = Sum_j: c[i,j] p[j] using weights
-    Input:
-    - data[nobs, nvar]
-    - weights[nobs, nvar]
-    Optional:
-    - niter : maximum number of iterations
-    - nvec : number of model vectors
-    - smooth : smoothing length scale (0 for no smoothing)
-    - randseed : random number generator seed; None to not re-initialize
-    Returns Model object
-    """
-        if weights is None:
-            weights = N.ones(data.shape)
-
-        if smooth > 0:
-            smooth = SavitzkyGolay(width=smooth)
-        else:
-            smooth = None
-
-        #- Basic dimensions
-        nobs, nvar = data.shape
-        assert data.shape == weights.shape
-
-        #- degrees of freedom for reduced chi2
-        ii = N.where(weights > 0)
-        dof = data[ii].size - nvec * nvar - nvec * nobs
-
-        #- Starting random guess
-        if eigvec_init == None:
-            eigvec = _random_orthonormal(nvec, nvar, seed=randseed)
-        else:
-            eigvec = eigvec_init
-
-        model = Model(eigvec, data, weights)
-        model.solve_coeffs()
-
-        # print " iter chi2/dof drchi_E drchi_M drchi_tot R2 rchi2"
-        print " iter R2 rchi2"
-
-        chi2 = [model.rchi2()]
-        for k in range(maxiter):
-            model.solve_coeffs()
-            model.solve_eigenvectors(smooth=smooth)
-            chi2.append(model.chi2())
-            print 'EMPCA %2d/%2d %15.8f %15.8f' % \
-                (k + 1, maxiter, model.R2(), chi2[-1] / model.dof)
-            sys.stdout.flush()
-
-            if k > 0 and (chi2[-2] - chi2[-1] < precision):
-                break
-
-        #- One last time with latest coefficients
-        model.solve_coeffs()
-
-        print "R2:", model.R2()
-
-        return model
-
-except:
-    # no empca_bailey in path, no trouble, just disable the definition
-    pass

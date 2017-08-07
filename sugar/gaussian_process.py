@@ -57,7 +57,7 @@ class load_data_bin_gp:
             self.time.append(time)
 
 
-    def load_mean_bin(self, number_bin, mean_file=None):
+    def load_mean_bin(self, number_bin, hsiao_empca=True):
         """
         Load the light curve average for the specific wavelength.
         """
@@ -65,39 +65,45 @@ class load_data_bin_gp:
         self.mean = []
         self.mean_wavelegth = []
 
-        if mean_file is None:
-            path = os.path.dirname(sugar.__file__)
+        nnumber_bin = len(self.lds.spectra_wavelength[self.sn_name[0]]['0'])
+        path = os.path.dirname(sugar.__file__)
+        
+        if hsiao_empca:
             mean_file = path + '/data_input/mean_gaussian_process.dat'
 
-        nnumber_bin = len(self.lds.spectra_wavelength[self.sn_name[0]]['0'])
+            data = np.loadtxt(mean_file)
+            number_points = len(data[:,0]) / nnumber_bin
+            y = np.zeros(number_points)
+            time = np.zeros(number_points)
+            wavelength = np.zeros(number_points)
 
-        data = np.loadtxt(mean_file)
-        number_points = len(data[:,0]) / nnumber_bin
-        y = np.zeros(number_points)
-        time = np.zeros(number_points)
-        wavelength = np.zeros(number_points)
-
-        y = data[number_points * number_bin: (number_points * number_bin) + number_points, 2]
-        time = data[number_points * number_bin: (number_points * number_bin) + number_points, 0]
-        wavelength = data[number_points * number_bin: (number_points * number_bin) + number_points, 1]
-
+            y = data[number_points * number_bin: (number_points * number_bin) + number_points, 2]
+            time = data[number_points * number_bin: (number_points * number_bin) + number_points, 0]
+            wavelength = data[number_points * number_bin: (number_points * number_bin) + number_points, 1]
+        else:
+            mean_file = cPickle.load(open(path + '/data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl'))
+            y = mean_file['bin%i'%(number_bin)]['mean']
+            time = mean_file['bin%i'%(number_bin)]['time']
+            wavelength = np.ones(len(y)) * mean_file['bin%i'%(number_bin)]['wavelength']
+            
         self.mean = y
         self.mean_time = time
         self.mean_wavelength = wavelength
 
 
-    def build_difference_mean(self, mean_file=None):
+    def build_difference_mean(self, hsiao_empca=True):
         """
         Compute systematique difference between average and data.
         """
         self.diff = np.zeros(len(self.sn_name))
-
-        if mean_file is None:
-            path = os.path.dirname(sugar.__file__)
+        path = os.path.dirname(sugar.__file__)
+        
+        if hsiao_empca:
             mean_file = path + '/data_input/mean_gaussian_process.dat'
-
-        data = np.loadtxt(mean_file)
-
+            data = np.loadtxt(mean_file)
+        else:
+            data = cPickle.load(open(path + '/data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl'))
+            
         delta_mean = 0
         delta_lambda = 0
 
@@ -124,9 +130,14 @@ class load_data_bin_gp:
             mean_new_binning = np.zeros(delta_lambda * len(phase))
 
             for Bin in range(delta_lambda):
-                interpolate_mean = cosmogp.mean.interpolate_mean_1d(self.mean_time,
-                                                               data[:, 2][Bin * delta_mean: (Bin + 1) * delta_mean],
-                                                               phase)
+                if hsiao_empca:
+                    interpolate_mean = cosmogp.mean.interpolate_mean_1d(self.mean_time,
+                                                                        data[:, 2][Bin * delta_mean: (Bin + 1) * delta_mean],
+                                                                        phase)
+                else:
+                    interpolate_mean = cosmogp.mean.interpolate_mean_1d(data['bin%i'%(Bin)]['time'],
+                                                                        data['bin%i'%(Bin)]['mean'],
+                                                                        phase)
                 mean_new_binning[Bin * delta: (Bin+1) * delta] = interpolate_mean
 
             reorder = np.arange(delta_lambda * delta).reshape(delta_lambda, delta).T.reshape(-1)
@@ -137,7 +148,8 @@ class load_data_bin_gp:
 
 class gp_sed:
     """Interpolate snia sed using gaussian process."""
-    def __init__(self, grid_interpolation=np.linspace(-12,42,19), svd_method=False):
+    def __init__(self, grid_interpolation=np.linspace(-12,42,19),
+                 svd_method=False, hsiao_empca=False):
         """
         Inteporlation of sed with gaussian process.
 
@@ -154,8 +166,10 @@ class gp_sed:
         self.sn_name = self.ldbg.sn_name
 
         self.wavelength = self.ldbg.wavelength
-        
+
         self.diff = self.ldbg.diff
+
+        self.hsiao_empca = hsiao_empca
         
         self.sigma = np.zeros(len(self.wavelength))
         self.l = np.zeros(len(self.wavelength))
@@ -170,8 +184,9 @@ class gp_sed:
             self.dic.update({self.sn_name[sn]:{}})
             for wave in range(len(self.wavelength)):
                 self.dic[self.sn_name[sn]].update({'bin%i'%(wave):{}})
-        
 
+        self.new_mean_gp = {}
+                
     def gaussian_process_regression(self):
         """
         Fit hyperparameter and interpolation for the full sed.
@@ -184,7 +199,7 @@ class gp_sed:
             print i+1,'/',len(self.wavelength)
 
             self.ldbg.load_data_bin(i)
-            self.ldbg.load_mean_bin(i)
+            self.ldbg.load_mean_bin(i,hsiao_empca=self.hsiao_empca)
 
             gpr = cosmogp.gaussian_process_nobject(self.ldbg.y, self.ldbg.time, kernel='RBF1D',
                                                    y_err=self.ldbg.y_err, diff=self.diff, Mean_Y=self.ldbg.mean,
@@ -206,6 +221,8 @@ class gp_sed:
             self.pull_std[i] = bp.pull_std
             self.pull_number_point[i] = len(bp.pull)
 
+            std = np.zeros((len(self.sn_name),len(self.grid_interpolation)))
+            
             for sn in range(len(self.sn_name)):
 
                 dic = {'prediction': gpr.Prediction[sn],
@@ -213,6 +230,11 @@ class gp_sed:
                        'time': gpr.new_binning,
                        'wavelength':self.wavelength[i]}
                 self.dic[self.sn_name[sn]]['bin%i'%(i)].update(dic)
+                std[sn] = np.sqrt(np.diag(gpr.covariance_matrix[sn]))
+
+            self.new_mean_gp.update({'bin%i'%(i):{'mean':np.average(gpr.Prediction,weights=1./std**2,axis=0),
+                                                  'time':gpr.new_binning,
+                                                  'wavelength':self.wavelength[i]}})
 
     def write_output(self):
         """
@@ -224,6 +246,10 @@ class gp_sed:
         fichier = open(output_directory+'sed_snia_gaussian_process.pkl','w')
         cPickle.dump(self.dic, fichier)
         fichier.close()
+
+        mean_file = open(output_directory+'mean_sed_snia_from_gaussian_process.pkl','w')
+        cPickle.dump(self.new_mean_gp, mean_file)
+        mean_file.close()
 
         gp_files = open(output_directory+'gp_info.dat','w')
         gp_files.write('#wavelength kernel_amplitude correlation_length pull_average pull_std pull_number_of_points \n')
@@ -237,8 +263,13 @@ class gp_sed:
 if __name__=="__main__":
 
     import time
-    gp = gp_sed()
     A = time.time()
+    gp = gp_sed(hsiao_empca=True)
     gp.gaussian_process_regression()
     gp.write_output()
+    for i in range(5):
+        del gp
+        gp = gp_sed(hsiao_empca=False)
+        gp.gaussian_process_regression()
+        gp.write_output()
     B = time.time()
