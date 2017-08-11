@@ -12,4 +12,5 @@ Some description.
 #           if '__init__' not in m]
 
 from .load_data import load_data_sugar
+from .gaussian_process import load_data_bin_gp
 
