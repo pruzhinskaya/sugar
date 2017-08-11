@@ -267,9 +267,9 @@ if __name__=="__main__":
     gp = gp_sed(hsiao_empca=True)
     gp.gaussian_process_regression()
     gp.write_output()
-    for i in range(5):
-        del gp
-        gp = gp_sed(hsiao_empca=False)
-        gp.gaussian_process_regression()
-        gp.write_output()
+    #for i in range(5):
+    #    del gp
+    #    gp = gp_sed(hsiao_empca=False)
+    #    gp.gaussian_process_regression()
+    #    gp.write_output()
     B = time.time()
