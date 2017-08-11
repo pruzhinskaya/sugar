@@ -4,7 +4,7 @@ import numpy as np
 import emfa
 import sugar
 import cPickle
-
+import os
 
 class emfa_si_analysis:
     """
@@ -167,8 +167,8 @@ class emfa_si_analysis:
             self._iterative_filter(chi2emfa=True)
         self._em_fa(emfa_output_pkl,bic=bic)
 
+def run_emfa_analysis(output_file=None, sigma_clipping=False):
 
-if __name__ == '__main__':
 
     snia = sugar.load_data_sugar()
     snia.load_spectral_indicator_at_max()
@@ -177,5 +177,13 @@ if __name__ == '__main__':
                                    snia.spectral_indicators_error,
                                    snia.sn_name,missing_data=True)
 
-    si_analysis.emfa('test.pkl',sigma_clipping=False,
+    if output_file is None:
+        path = os.path.dirname(sugar.__file__)
+        output_file = path + '/data_output/emfa_output.pkl'
+
+    si_analysis.emfa(output_file,sigma_clipping=False,
                      chi2emfa=True,bic=False)
+
+if __name__ == '__main__':
+
+    run_emfa_analysis(output_file=None, sigma_clipping=False)
