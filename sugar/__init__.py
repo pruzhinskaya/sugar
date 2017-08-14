@@ -12,5 +12,15 @@ Some description.
 #           if '__init__' not in m]
 
 from .load_data import load_data_sugar
+
 from .gaussian_process import load_data_bin_gp
+
+from .math_toolbox import passage
+from .math_toolbox import passage_error
+from .math_toolbox import svd_inverse
+from .math_toolbox import cholesky_inverse
+
+from .cosmology import distance_modulus
+
+
 

@@ -6,6 +6,29 @@ import sugar
 import cPickle
 import os
 
+def sort_eigen(eigenval,eigenvec):
+    """
+    sort eigenvec and eigenval.
+    """
+
+    eigenvec_sort = np.zeros(np.shape(eigenvec))
+    eigenval_sort = np.zeros(len(eigenval))
+    
+    eigenval_list = list(eigenval)
+    eigenvec_list = list(eigenvec.T)
+
+    for i in range(len(eigenval_sort)):
+
+        ind_max = eigenval_list.index(max(eigenval_list))
+        eigenvec_sort[:,i] = eigenvec_list[ind_max]
+        eigenval_sort[i] = eigenval_list[ind_max]
+        
+        del eigenval_list[ind_max]
+        del eigenvec_list[ind_max]
+
+    return eigenval_sort, eigenvec_sort
+                                                        
+
 class emfa_si_analysis:
     """
     do emfa on spectral features space.
@@ -146,6 +169,8 @@ class emfa_si_analysis:
         self.EM_FA_Cov = varr
         self.val = val.real
         self.vec = vec.real
+
+        self.val, self.vec = sort_eigen(self.val, self.vec)
 
         self.Norm_data = (self.data_center/self._Norm_varr(self.filter))
         self.Norm_err = (self.error_center/self._Norm_varr(self.filter))

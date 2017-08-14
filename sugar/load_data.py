@@ -49,6 +49,21 @@ class load_data_sugar:
         self.spectral_indicators = []
         self.spectral_indicators_error = []
 
+        self.X0 = []
+        self.X1 = []
+        self.C = []
+        self.mb = []
+        self.zhelio = []
+        self.zcmb = []
+        self.zerr = []
+        self.mb_err = []
+        self.X0_err = []
+        self.X1_err = []
+        self.C_err = []
+        self.C_mb_cov = []
+        self.X1_C_cov = []
+        self.X1_mb_cov = []
+
     def load_spectra(self, file_spectra=None):
         """
         Load time sed of snia.
@@ -144,6 +159,41 @@ class load_data_sugar:
                     self.spectral_indicators[sn, si] = np.average(data[:, si], weights=1. / error[:, si]**2)
                     self.spectral_indicators_error[sn, si] = 10**8
 
+    def load_salt2_data(self):
+
+        meta = cPickle.load(open(path+'/data_input/META_JLA.pkl'))
+
+        for i in range(len(self.sn_name)):
+            self.X0.append(meta[self.sn_name[i]]['salt2.X0'])
+            self.X1.append(meta[self.sn_name[i]]['salt2.X1'])
+            self.C.append(meta[self.sn_name[i]]['salt2.Color'])
+            self.mb.append(meta[self.sn_name[i]]['salt2.RestFrameMag_0_B'])
+            self.zhelio.append(meta[self.sn_name[i]]['host.zhelio'])
+            self.zcmb.append(meta[self.sn_name[i]]['host.zcmb'])
+            self.zerr.append(meta[self.sn_name[i]]['host.zhelio.err'])
+            self.mb_err.append(meta[self.sn_name[i]]['salt2.RestFrameMag_0_B.err'])
+            self.X0_err.append(meta[self.sn_name[i]]['salt2.X0.err'])
+            self.X1_err.append(meta[self.sn_name[i]]['salt2.X1'])
+            self.C_err.append(meta[self.sn_name[i]]['salt2.Color.err'])
+            self.C_mb_cov.append(meta[self.sn_name[i]]['salt2.CovColorRestFrameMag_0_B'])
+            self.X1_C_cov.append(meta[self.sn_name[i]]['salt2.CovColorX1'])
+            self.X1_mb_cov.append(meta[self.sn_name[i]]['salt2.CovRestFrameMag_0_BX1'])
+
+        self.X0 = np.array(self.X0)
+        self.X1 = np.array(self.X1)
+        self.C = np.array(self.C)
+        self.mb = np.array(self.mb)
+        self.zhelio = np.array(self.zhelio)
+        self.zcmb = np.array(self.zcmb)
+        self.zerr = np.array(self.zerr)
+        self.mb_err = np.array(self.mb_err)
+        self.X0_err = np.array(self.X0_err)
+        self.X1_err = np.array(self.X1_err)
+        self.C_err = np.array(self.C_err)
+        self.C_mb_cov = np.array(self.C_mb_cov)
+        self.X1_C_cov = np.array(self.X1_C_cov)
+        self.X1_mb_cov = np.array(self.X1_mb_cov)
+                                                                                        
 
 if __name__=='__main__':
 
@@ -151,3 +201,4 @@ if __name__=='__main__':
     lds.load_spectra()
     lds.load_spectra_at_max()
     lds.load_spectral_indicator_at_max()
+    lds.load_salt2_data()
