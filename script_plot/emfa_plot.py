@@ -346,6 +346,6 @@ class emfa_plot:
 if __name__=='__main__':
 
     faplot = emfa_plot()
-    #faplot.plot_eigenvalues()
+    faplot.plot_eigenvalues()
     faplot.plot_pf_corr_factor_si(split=5)
     faplot.plot_pf_corr_factor_salt2(split=5)
