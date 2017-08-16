@@ -14,6 +14,7 @@ Some description.
 from .load_data import load_data_sugar
 
 from .gaussian_process import load_data_bin_gp
+from .gaussian_process import gp_sed 
 
 from .math_toolbox import passage
 from .math_toolbox import passage_error
@@ -22,5 +23,6 @@ from .math_toolbox import cholesky_inverse
 
 from .cosmology import distance_modulus
 
+from .emfa_analysis import run_emfa_analysis
 
 
