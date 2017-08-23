@@ -25,7 +25,6 @@ import scipy.odr.models as M
 from scipy import optimize,linalg,sparse
 from scipy.sparse import block_diag
 from scipy.misc import derivative
-import pylab as P
 import numpy as N
 import scipy as S
 from ToolBox import Hubblefit as H
@@ -33,7 +32,7 @@ from ToolBox import Astro
 import copy
 import cPickle
 import scipy.interpolate as inter
-import emfa_covariant as EMfa_cov
+#import emfa_covariant as EMfa_cov
 
 
 def extract_block_diag(A,size_bloc,number_bloc):
@@ -2752,229 +2751,229 @@ class global_fit:
      #  control plot
      ###########################
 
-     def plot_control_chi2(self):
+     #def plot_control_chi2(self):
 
-          P.figure()
-          X=N.linspace(1,len(self.CHI2),len(self.CHI2))
-          P.plot(X,self.CHI2,'b',label=r'$\chi^2$ ODR')
-          P.xlabel('iteration')
-          P.ylabel(r'$\chi ^2$')
-          P.legend()
-
-
-     def plot_control_slopes(self,DisP=False):
-
-          phot=['U','B','V','R','I']
-
-          for Bin in range(self.N_bin):
-               if self.N_bin==5:
-                    self.plot_control_Bin(Bin,DISP=DisP)
-               else:
-                    if Bin%20==0:
-                         self.plot_control_Bin(Bin,DISP=DisP)
-
-          P.show()
+     #     P.figure()
+     #     X=N.linspace(1,len(self.CHI2),len(self.CHI2))
+     #     P.plot(X,self.CHI2,'b',label=r'$\chi^2$ ODR')
+     #     P.xlabel('iteration')
+     #     P.ylabel(r'$\chi ^2$')
+     #     P.legend()
 
 
-     def plot_control_Bin(self,BIN,DISP=False):
-          
-          Color= self.Color or self.CCM
+     #def plot_control_slopes(self,DisP=False):
 
-          if DISP:
-               disp=self.disp_added*self.disp_matrix[BIN,BIN]
-          else:
-               disp=0.
+     #     phot=['U','B','V','R','I']
 
-          self.separate_slopes_and_data()
+     #     for Bin in range(self.N_bin):
+     #          if self.N_bin==5:
+     #               self.plot_control_Bin(Bin,DISP=DisP)
+     #          else:
+     #               if Bin%20==0:
+     #                    self.plot_control_Bin(Bin,DISP=DisP)
 
-          if Color:
-              if self.intrinsic:
-                  corr= len(self.Data[0])+1  
-              else:
-                  corr= 1  
-          else:
-              if self.intrinsic:
-                  corr= len(self.Data[0])
-              else:
-                  corr=0
-
-          Y=N.zeros((corr,self.N_sn))
+     #     P.show()
 
 
-          if Color:
-               Y[0]=copy.deepcopy(self.Y[:,BIN])
-               for i in range(corr-1):
-                   if self.intrinsic:
-                       Y[0]-=self.Data[:,i]*self.Alpha[BIN,i]
-               if self.delta_M_grey:
-                    Y[0]-=self.delta_M_GREY
-                    
-               for i in range(corr-1):
-                    Y[i+1]=copy.deepcopy(self.Y[:,BIN])
-                    Y[i+1]-=self.Av*self.reddening_law[BIN]
-                    for j in range(corr-1):
-                         if i!=j:
-                             if self.intrinsic:
-                                 Y[i+1]-=self.Data[:,j]*self.Alpha[BIN,j]
-                    if self.delta_M_grey:
-                         Y[i+1]-=self.delta_M_GREY
+     #def plot_control_Bin(self,BIN,DISP=False):
+     #     
+     #     Color= self.Color or self.CCM
 
-          else:                   
-               for i in range(corr):
-                    Y[i]=copy.deepcopy(self.Y[:,BIN])
-                    for j in range(corr):
-                         if i!=j:
-                             if self.intrinsic:
-                                 Y[i]-=self.Data[:,j]*self.Alpha[BIN,j]
-                    if self.delta_M_grey:
-                         Y[i]-=self.delta_M_GREY
+     #     if DISP:
+     #          disp=self.disp_added*self.disp_matrix[BIN,BIN]
+     #     else:
+     #          disp=0.
+
+     #     self.separate_slopes_and_data()
+
+     #     if Color:
+     #         if self.intrinsic:
+     #             corr= len(self.Data[0])+1  
+     #         else:
+     #             corr= 1  
+     #     else:
+     #         if self.intrinsic:
+     #             corr= len(self.Data[0])
+     #         else:
+     #             corr=0
+
+     #     Y=N.zeros((corr,self.N_sn))
+
+
+     #     if Color:
+     #          Y[0]=copy.deepcopy(self.Y[:,BIN])
+     #          for i in range(corr-1):
+     #              if self.intrinsic:
+     #                  Y[0]-=self.Data[:,i]*self.Alpha[BIN,i]
+     #          if self.delta_M_grey:
+     #               Y[0]-=self.delta_M_GREY
+     #               
+     #          for i in range(corr-1):
+     #               Y[i+1]=copy.deepcopy(self.Y[:,BIN])
+     #               Y[i+1]-=self.Av*self.reddening_law[BIN]
+     #               for j in range(corr-1):
+     #                    if i!=j:
+     #                        if self.intrinsic:
+     #                            Y[i+1]-=self.Data[:,j]*self.Alpha[BIN,j]
+     #               if self.delta_M_grey:
+     #                    Y[i+1]-=self.delta_M_GREY
+
+     #     else:                   
+     #          for i in range(corr):
+     #               Y[i]=copy.deepcopy(self.Y[:,BIN])
+     #               for j in range(corr):
+     #                    if i!=j:
+     #                        if self.intrinsic:
+     #                            Y[i]-=self.Data[:,j]*self.Alpha[BIN,j]
+     #               if self.delta_M_grey:
+     #                    Y[i]-=self.delta_M_GREY
 
      
           
 
 
-          for i in range(corr):
-               if i==0 and Color:
-                    P.figure(figsize=(10,10))
-                    P.errorbar(self.Av,Y[i],linestyle='',xerr=None,yerr=N.sqrt(self.dY[:,BIN]**2+disp),ecolor='blue',alpha=0.7,marker='.',zorder=0)
-                    P.scatter(self.Av,Y[i],c='b',s=10)
-                    P.plot(self.Av,self.reddening_law[BIN]*self.Av+self.M0[BIN],'r')
-                    P.xlabel('$A_V$',fontsize=16)
-                    if self.delta_M_grey:
-                         P.ylabel('$M(t,\lambda) - \sum_i \\alpha_i(t,\lambda) q_i - \Delta M_{grey}(t)$',fontsize=16)
-                    else:
-                         P.ylabel('$M(t,\lambda) - \sum_i \\alpha_i(t,\lambda) q_i $',fontsize=16)
+      #    for i in range(corr):
+      #         if i==0 and Color:
+      #              P.figure(figsize=(10,10))
+      #              P.errorbar(self.Av,Y[i],linestyle='',xerr=None,yerr=N.sqrt(self.dY[:,BIN]**2+disp),ecolor='blue',alpha=0.7,marker='.',zorder=0)
+      #              P.scatter(self.Av,Y[i],c='b',s=10)
+      #              P.plot(self.Av,self.reddening_law[BIN]*self.Av+self.M0[BIN],'r')
+      #              P.xlabel('$A_V$',fontsize=16)
+      #              if self.delta_M_grey:
+      #                   P.ylabel('$M(t,\lambda) - \sum_i \\alpha_i(t,\lambda) q_i - \Delta M_{grey}(t)$',fontsize=16)
+      #              else:
+      #                   P.ylabel('$M(t,\lambda) - \sum_i \\alpha_i(t,\lambda) q_i $',fontsize=16)
 
-                    P.title(r'$\lambda=%i \AA$'%(self.wavelength[BIN]))
-                    P.gca().invert_yaxis()
+      #              P.title(r'$\lambda=%i \AA$'%(self.wavelength[BIN]))
+      #              P.gca().invert_yaxis()
                
-               if self.intrinsic:
-                   if i!=0 and Color:
-                        P.figure(figsize=(10,10))
-                        
-                        P.errorbar(self.Data[:,i-1],Y[i],linestyle='',xerr=None,yerr=N.sqrt(self.dY[:,BIN]**2+disp),ecolor='blue',alpha=0.7,marker='.',zorder=0)
-                        P.scatter(self.Data[:,i-1],Y[i],c='b',s=10)
-                        P.plot(self.Data[:,i-1],self.Alpha[BIN,i-1]*self.Data[:,i-1]+self.M0[BIN],'r')
-                        P.xlabel('$q_{%i}$'%(i),fontsize=16)
-                        if self.delta_M_grey:
-                             P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i -A_V S(\lambda) - \Delta M_{grey}(t)$'%(i),fontsize=16)
-                        else:
-                             P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i -A_V S(\lambda)$'%(i),fontsize=16)
-                             
-                        P.title(r'$\lambda=%i \AA$'%(self.wavelength[BIN]))
-                        P.gca().invert_yaxis()
-                   else:
-                        P.figure(figsize=(10,10))
-                        P.errorbar(self.Data[:,i],Y[i],linestyle='',xerr=None,yerr=N.sqrt(self.dY[:,BIN]**2+disp),ecolor='blue',alpha=0.7,marker='.',zorder=0)
-                        P.scatter(self.Data[:,i],Y[i],c='b',s=10)
-                        P.plot(self.Data[:,i],self.Alpha[BIN,i-1]*self.Data[:,i]+self.M0[BIN],'r')
-                        
-                        P.xlabel('$q_{%i}$'%(i+1),fontsize=16)
-                        if self.delta_M_grey:
-                             P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i - \Delta M_{grey}(t)$'%(i+1),fontsize=16)
-                        else:
-                             P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i $'%(i+1),fontsize=16)
-                        P.title(r'$\lambda=%i \AA$'%(self.wavelength[BIN]))
+      #         if self.intrinsic:
+      #             if i!=0 and Color:
+      #                  P.figure(figsize=(10,10))
+      #                  
+      #                  P.errorbar(self.Data[:,i-1],Y[i],linestyle='',xerr=None,yerr=N.sqrt(self.dY[:,BIN]**2+disp),ecolor='blue',alpha=0.7,marker='.',zorder=0)
+      #                  P.scatter(self.Data[:,i-1],Y[i],c='b',s=10)
+      #                  P.plot(self.Data[:,i-1],self.Alpha[BIN,i-1]*self.Data[:,i-1]+self.M0[BIN],'r')
+      #                  P.xlabel('$q_{%i}$'%(i),fontsize=16)
+      #                  if self.delta_M_grey:
+      #                       P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i -A_V S(\lambda) - \Delta M_{grey}(t)$'%(i),fontsize=16)
+      #                   else:
+      #                       P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i -A_V S(\lambda)$'%(i),fontsize=16)
+      #                       
+      #                  P.title(r'$\lambda=%i \AA$'%(self.wavelength[BIN]))
+      #                  P.gca().invert_yaxis()
+      #             else:
+      #                  P.figure(figsize=(10,10))
+      #                  P.errorbar(self.Data[:,i],Y[i],linestyle='',xerr=None,yerr=N.sqrt(self.dY[:,BIN]**2+disp),ecolor='blue',alpha=0.7,marker='.',zorder=0)
+      #                  P.scatter(self.Data[:,i],Y[i],c='b',s=10)
+      #                  P.plot(self.Data[:,i],self.Alpha[BIN,i-1]*self.Data[:,i]+self.M0[BIN],'r')
+      #                  
+      #                  P.xlabel('$q_{%i}$'%(i+1),fontsize=16)
+      #                  if self.delta_M_grey:
+      #                       P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i - \Delta M_{grey}(t)$'%(i+1),fontsize=16)
+      #                  else:
+      #                       P.ylabel('$M(t,\lambda) - \sum_{i\\ne%i} \\alpha_i(t,\lambda) q_i $'%(i+1),fontsize=16)
+      #                  P.title(r'$\lambda=%i \AA$'%(self.wavelength[BIN]))
+      # 
     
-    
-                        P.gca().invert_yaxis()
+      #                  P.gca().invert_yaxis()
     
 
 
-     def plot_control_spectra(self,interactif=False,sn_name=None):
+     #def plot_control_spectra(self,interactif=False,sn_name=None):
+     #   
+     #     Color=self.Color or self.CCM
+
+
+     #     Mag_corrected=N.zeros(N.shape(self.Y))
+     #     STD=N.zeros(self.N_bin)
+     #     data=copy.deepcopy(self.data)
         
-          Color=self.Color or self.CCM
+     #     if Color:
+     #          data[:,(1+self.grey)]=self.h[:,(1+self.grey)]
+     #       
+     #     if self.delta_M_grey:
+     #          data[:,1]=self.h[:,1]
+     #       
+     #     for sn in range(self.N_sn):
+     #          Mag_corrected[sn]=self.Y[sn]-N.dot(self.A,N.matrix(data[sn]).T).T[0] +self.M0 
+     #       
+     #     for Bin in range(self.N_bin):
+     #          STD[Bin]=N.std(Mag_corrected[:,Bin])
 
+     #     P.figure()
 
-          Mag_corrected=N.zeros(N.shape(self.Y))
-          STD=N.zeros(self.N_bin)
-          data=copy.deepcopy(self.data)
-        
-          if Color:
-               data[:,(1+self.grey)]=self.h[:,(1+self.grey)]
-            
-          if self.delta_M_grey:
-               data[:,1]=self.h[:,1]
-            
-          for sn in range(self.N_sn):
-               Mag_corrected[sn]=self.Y[sn]-N.dot(self.A,N.matrix(data[sn]).T).T[0] +self.M0 
-            
-          for Bin in range(self.N_bin):
-               STD[Bin]=N.std(Mag_corrected[:,Bin])
+     #     P.subplots_adjust(hspace=0.001)
+     #     for sn in range(self.N_sn):
 
-          P.figure()
-
-          P.subplots_adjust(hspace=0.001)
-          for sn in range(self.N_sn):
-
-               P.subplot(2,1,1)
-               P.plot(self.wavelength,Mag_corrected[sn]+19.2)
-        
-          P.title('spectrum corrected')
-
-          P.ylabel('all spectrum (Mag AB + cst)')
-          P.ylim(-2.8,5.2)
-          P.xticks([2500.,9500.],['toto','pouet'])
-          P.xlim(self.wavelength[0]-60,self.wavelength[-1]+60)
-          P.gca().invert_yaxis()
-
-          if interactif:
-               from ToolBox import MPL
-               X=N.ones(self.N_sn)*self.wavelength[0]
-               scat=P.scatter(X,Mag_corrected[:,0]+19.2,s=20)
-               browser=MPL.PointBrowser(X, Mag_corrected[:,0]+19.2,sn_name,scat)
-        
-          P.subplot(2,1,2)
-          P.plot(self.wavelength,STD,'b',label=r'STD')
-          P.ylabel('STD')
-          P.xlabel('wavelength [$\AA$]')
-          P.xlim(self.wavelength[0]-60,self.wavelength[-1]+60)
-          P.ylim(0,0.25)
-          P.legend()
-          P.show()
-
-
-
-     def plot_matrix(self,ylabel=r'$\rho$',title='correlation matrix',cmap=P.cm.jet):
-    
-          matrix=N.zeros(N.shape(self.disp_matrix))
-
-          disp_matrix=self.disp_matrix*self.disp_added**2
-          self.diag_std_disp_matrix=N.sqrt(N.diag(disp_matrix))
-
-          for Bin_i in range(len(self.wavelength)):
-               for Bin_j in range(len(self.wavelength)):
-                    matrix[Bin_i,Bin_j]=disp_matrix[Bin_i,Bin_j]/(self.diag_std_disp_matrix[Bin_i]*self.diag_std_disp_matrix[Bin_j])
- 
-
-
-          values = [N.diag(matrix,k=i) for i in range(len(matrix))]
-          
-          means=map(N.mean,values)
-          stds=map(N.std,values)
-          med,nmad=N.array([median_stats(x) for x in values]).T
-     
-    
-          #Plot the matrix
-          wlength=[self.wavelength[0],self.wavelength[-1],self.wavelength[-1],self.wavelength[0]]
-          fig = P.figure(dpi=150,figsize=(8,8))
-          #fig = figure(figsize=(12,12))
-          ax = fig.add_axes([0.08,0.09,0.88,0.88]) #title=title
-          im = ax.imshow(matrix,cmap=cmap,extent=wlength,interpolation='nearest')
-          cb = fig.colorbar(im)
-          cb.set_label(ylabel,size='x-large')
-          ax.set_xlabel(r'Wavelength [$\AA$]',size='large')
-          ax.set_ylabel(r'Wavelength [$\AA$]',size='large')
-    
-     def plot_diag_matrix(self):
-
-          P.figure()
-
-          P.plot(self.wavelength,self.diag_std_disp_matrix)
-          P.xlabel(r'Wavelength [$\AA$]')
-          P.ylabel(r'$\sqrt{diag(D)}$')
-          P.ylim(0,0.2)
-
+#              P.subplot(2,1,1)
+#              P.plot(self.wavelength,Mag_corrected[sn]+19.2)
+#       
+#         P.title('spectrum corrected')
+#
+#         P.ylabel('all spectrum (Mag AB + cst)')
+#         P.ylim(-2.8,5.2)
+#         P.xticks([2500.,9500.],['toto','pouet'])
+#         P.xlim(self.wavelength[0]-60,self.wavelength[-1]+60)
+#         P.gca().invert_yaxis()
+#
+#         if interactif:
+#              from ToolBox import MPL
+#              X=N.ones(self.N_sn)*self.wavelength[0]
+#              scat=P.scatter(X,Mag_corrected[:,0]+19.2,s=20)
+#              browser=MPL.PointBrowser(X, Mag_corrected[:,0]+19.2,sn_name,scat)
+#       
+#         P.subplot(2,1,2)
+#         P.plot(self.wavelength,STD,'b',label=r'STD')
+#         P.ylabel('STD')
+#         P.xlabel('wavelength [$\AA$]')
+#         P.xlim(self.wavelength[0]-60,self.wavelength[-1]+60)
+#         P.ylim(0,0.25)
+#         P.legend()
+#         P.show()
+#
+#
+#
+#    def plot_matrix(self,ylabel=r'$\rho$',title='correlation matrix',cmap=P.cm.jet):
+#   
+#         matrix=N.zeros(N.shape(self.disp_matrix))
+#
+#         disp_matrix=self.disp_matrix*self.disp_added**2
+#         self.diag_std_disp_matrix=N.sqrt(N.diag(disp_matrix))
+#
+#         for Bin_i in range(len(self.wavelength)):
+#              for Bin_j in range(len(self.wavelength)):
+#                   matrix[Bin_i,Bin_j]=disp_matrix[Bin_i,Bin_j]/(self.diag_std_disp_matrix[Bin_i]*self.diag_std_disp_matrix[Bin_j])
+#
+#
+#
+#         values = [N.diag(matrix,k=i) for i in range(len(matrix))]
+#         
+#         means=map(N.mean,values)
+#         stds=map(N.std,values)
+#         med,nmad=N.array([median_stats(x) for x in values]).T
+#    
+#   
+#         #Plot the matrix
+#         wlength=[self.wavelength[0],self.wavelength[-1],self.wavelength[-1],self.wavelength[0]]
+#         fig = P.figure(dpi=150,figsize=(8,8))
+#         #fig = figure(figsize=(12,12))
+#         ax = fig.add_axes([0.08,0.09,0.88,0.88]) #title=title
+#         im = ax.imshow(matrix,cmap=cmap,extent=wlength,interpolation='nearest')
+#         cb = fig.colorbar(im)
+#         cb.set_label(ylabel,size='x-large')
+#         ax.set_xlabel(r'Wavelength [$\AA$]',size='large')
+#         ax.set_ylabel(r'Wavelength [$\AA$]',size='large')
+#   
+#    def plot_diag_matrix(self):
+#
+#         P.figure()
+#
+#         P.plot(self.wavelength,self.diag_std_disp_matrix)
+#         P.xlabel(r'Wavelength [$\AA$]')
+#         P.ylabel(r'$\sqrt{diag(D)}$')
+#         P.ylim(0,0.2)
+#
 
 #######################################################################################
 #######################################################################################
@@ -2991,352 +2990,352 @@ class global_fit:
 
 
 #==============================================================================
-# Map Chi2 ODR after a Global MultiLinear fit 
-#==============================================================================
-
-
-class Map_chi2(global_fit):
-
-    def __init__(self,Data,YY,CovXX,dYY,Wavelength,
-                 Dm_z=None,Alpha0=None,Reddening_law=None,
-                 MM00=None,HH0=None,BB_V=None,delta_M0=None,
-                 inv_RV=None,Disp_Matrix_Init=None,
-                 COlor=True,Delta_M_grey=True,ccm=True):
-
-
-        global_fit.__init__(self,YY,dYY,Wavelength,dm_z=Dm_z,data=Data,CovX=CovXX,
-                            alpha0=Alpha0,reddening_law=Reddening_law,M00=MM00,H0=HH0,
-                            B_V=BB_V,Delta_M0=delta_M0,Disp_matrix_Init=Disp_Matrix_Init,
-                            Color=COlor,delta_M_grey=Delta_M_grey,CCM=ccm)
-
-
-        if inv_RV is not None:
-            self.inv_Rv=inv_RV
-        self.Range=50
-
-    
-    def variate_chi2_alpha(self):
-        
-        if not self.intrinsic:
-            return
-
-        self.separate_slopes_and_data()
-         
-        Alpha_save=copy.deepcopy(self.Alpha)
-
-        self.alpha_variation=N.zeros((self.N_bin,len(self.Alpha[0]),self.Range))
-        self.chi2_alpha_variation=N.zeros((self.N_bin,len(self.Alpha[0]),self.Range))
-
-        for Bin in range(self.N_bin):
-            print Bin
-            for Comp in range(len(self.Alpha[0])):
-                self.alpha_variation[Bin,Comp]=N.linspace(Alpha_save[Bin,Comp]-3.*N.std(Alpha_save[:,Comp]),Alpha_save[Bin,Comp]+3.*N.std(Alpha_save[:,Comp]),self.Range)
-                     
-                for R in range(self.Range):
-                     
-                    self.Alpha[Bin,Comp]=copy.deepcopy(self.alpha_variation[Bin,Comp,R])
-                    self.merge_slopes_and_data()
-          
-                    A=copy.deepcopy(self.A)
-                    h=copy.deepcopy(self.h)
-         
-                    residu1=N.zeros((self.N_sn,self.N_bin))
-                    residu2=N.zeros((self.N_sn,self.N_comp))
-                    chi2=N.zeros(self.N_sn)
-                     
-                    for sn in range(self.N_sn):
-                         
-                        residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                        residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                        chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-
-    
-                    self.chi2_alpha_variation[Bin,Comp,R]=chi2.sum()
-
-                self.Alpha=copy.deepcopy(Alpha_save)
-                self.merge_slopes_and_data()
-
-    def variate_chi2_M0(self):
-         
-        self.separate_slopes_and_data()
-         
-        M0_save=copy.deepcopy(self.M0)
-
-        self.M0_variation=N.zeros((self.N_bin,self.Range))
-        self.chi2_M0_variation=N.zeros((self.N_bin,self.Range))
-
-        for Bin in range(self.N_bin):
-            print Bin
-            
-            self.M0_variation[Bin]=N.linspace(M0_save[Bin]-3.*N.std(M0_save),M0_save[Bin]+3.*N.std(M0_save),self.Range)
-                     
-            for R in range(self.Range):
-                     
-                self.M0[Bin]=copy.deepcopy(self.M0_variation[Bin,R])
-                self.merge_slopes_and_data()
-          
-                A=copy.deepcopy(self.A)
-                h=copy.deepcopy(self.h)
-         
-                residu1=N.zeros((self.N_sn,self.N_bin))
-                residu2=N.zeros((self.N_sn,self.N_comp))
-                chi2=N.zeros(self.N_sn)
-                     
-                for sn in range(self.N_sn):
-                         
-                    residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                    residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                    chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-
-    
-                self.chi2_M0_variation[Bin,R]=chi2.sum()
-
-            self.M0=copy.deepcopy(M0_save)
-            self.merge_slopes_and_data()
-
-
-    def variate_chi2_grey(self):
-         
-        self.separate_slopes_and_data()
-         
-        grey_save=copy.deepcopy(self.delta_M_GREY)
-
-        self.grey_variation=N.zeros((self.N_sn,self.Range))
-        self.chi2_grey_variation=N.zeros((self.N_sn,self.Range))
-
-        for SN in range(self.N_sn):
-            print SN
-            
-            self.grey_variation[SN]=N.linspace(grey_save[SN]-3.*N.std(grey_save),grey_save[SN]+3.*N.std(grey_save),self.Range)
-                     
-            for R in range(self.Range):
-                     
-                self.delta_M_GREY[SN]=copy.deepcopy(self.grey_variation[SN,R])
-                self.merge_slopes_and_data()
-          
-                A=copy.deepcopy(self.A)
-                h=copy.deepcopy(self.h)
-         
-                residu1=N.zeros((self.N_sn,self.N_bin))
-                residu2=N.zeros((self.N_sn,self.N_comp))
-                chi2=N.zeros(self.N_sn)
-                     
-                for sn in range(self.N_sn):
-                         
-                    residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                    residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                    chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-                        
-                    
-                self.chi2_grey_variation[SN,R]=chi2.sum()
-
-            self.delta_M_GREY=copy.deepcopy(grey_save)
-            self.merge_slopes_and_data()
-
-
-    def variate_chi2_Av(self):
-         
-        self.separate_slopes_and_data()
-         
-        Av_save=copy.deepcopy(self.Av)
-
-        self.Av_variation=N.zeros((self.N_sn,self.Range))
-        self.chi2_Av_variation=N.zeros((self.N_sn,self.Range))
-
-        for SN in range(self.N_sn):
-            print SN
-            
-            self.Av_variation[SN]=N.linspace(Av_save[SN]-3.*N.std(Av_save),Av_save[SN]+3.*N.std(Av_save),self.Range)
-                     
-            for R in range(self.Range):
-                     
-                self.Av[SN]=copy.deepcopy(self.Av_variation[SN,R])
-                self.merge_slopes_and_data()
-          
-                A=copy.deepcopy(self.A)
-                h=copy.deepcopy(self.h)
-         
-                residu1=N.zeros((self.N_sn,self.N_bin))
-                residu2=N.zeros((self.N_sn,self.N_comp))
-                chi2=N.zeros(self.N_sn)
-                     
-                for sn in range(self.N_sn):
-                         
-                    residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                    residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                    chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-                        
-                    
-                self.chi2_Av_variation[SN,R]=chi2.sum()
-
-            self.Av=copy.deepcopy(Av_save)
-            self.merge_slopes_and_data()
-
-
-
-    def variate_chi2_xplus(self):
-
-        if not self.intrinsic:
-            return
-         
-        self.separate_slopes_and_data()
-         
-        xplus_save=copy.deepcopy(self.xplus)
-
-        self.xplus_variation=N.zeros((self.N_sn,len(self.Alpha[0]),self.Range))
-        self.chi2_xplus_variation=N.zeros((self.N_sn,len(self.Alpha[0]),self.Range))
-
-        for SN in range(self.N_sn):
-            print SN
-            for Comp in range(len(self.xplus[0])):
-                self.xplus_variation[SN,Comp]=N.linspace(xplus_save[SN,Comp]-3.*N.std(xplus_save[:,Comp]),xplus_save[SN,Comp]+3.*N.std(xplus_save[:,Comp]),self.Range)
-                     
-                for R in range(self.Range):
-                     
-                    self.xplus[SN,Comp]=copy.deepcopy(self.xplus_variation[SN,Comp,R])
-                    self.merge_slopes_and_data()
-          
-                    A=copy.deepcopy(self.A)
-                    h=copy.deepcopy(self.h)
-         
-                    residu1=N.zeros((self.N_sn,self.N_bin))
-                    residu2=N.zeros((self.N_sn,self.N_comp))
-                    chi2=N.zeros(self.N_sn)
-                     
-                    for sn in range(self.N_sn):
-                         
-                        residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                        residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                        chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-                        
-                    
-                    self.chi2_xplus_variation[SN,Comp,R]=chi2.sum()
-
-                self.xplus=copy.deepcopy(xplus_save)
-                self.merge_slopes_and_data()
-
-
-
-
-        
-    def variate_chi2_Red_law_agno(self):
-         
-        self.separate_slopes_and_data()
-         
-        red_law_save=copy.deepcopy(self.reddening_law)
-
-        self.red_law_variation=N.zeros((self.N_bin,self.Range))
-        self.chi2_red_law_variation=N.zeros((self.N_bin,self.Range))
-
-        for Bin in range(self.N_bin):
-            print Bin
-            
-            self.red_law_variation[Bin]=N.linspace(red_law_save[Bin]-3.*N.std(red_law_save),red_law_save[Bin]+3.*N.std(red_law_save),self.Range)
-                     
-            for R in range(self.Range):
-                     
-                self.reddening_law[Bin]=copy.deepcopy(self.red_law_variation[Bin,R])
-                self.merge_slopes_and_data()
-          
-                A=copy.deepcopy(self.A)
-                h=copy.deepcopy(self.h)
-         
-                residu1=N.zeros((self.N_sn,self.N_bin))
-                residu2=N.zeros((self.N_sn,self.N_comp))
-                chi2=N.zeros(self.N_sn)
-                     
-                for sn in range(self.N_sn):
-                         
-                    residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                    residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                    chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-
-    
-                self.chi2_red_law_variation[Bin,R]=chi2.sum()
-
-            self.reddening_law=copy.deepcopy(red_law_save)
-            self.merge_slopes_and_data()
-
-
-
-
-    def variate_chi2_inv_Rv(self):
-         
-        self.separate_slopes_and_data()
-
-        a_cardelli,b_cardelli=Astro.Extinction.extinctionParameters(self.wavelength,odonnell=False)
-
-        red_law_save=copy.deepcopy(self.reddening_law)
-        inv_Rv_save=copy.deepcopy(self.inv_Rv)
-
-        self.inv_Rv_variation=N.linspace(inv_Rv_save-1,inv_Rv_save+1,self.Range)
-        self.chi2_inv_Rv_variation=N.zeros(self.Range)
-                     
-        for R in range(self.Range):
-                     
-            self.reddening_law=copy.deepcopy(a_cardelli+self.inv_Rv_variation[R]*b_cardelli)
-            self.merge_slopes_and_data()
-          
-            A=copy.deepcopy(self.A)
-            h=copy.deepcopy(self.h)
-         
-            residu1=N.zeros((self.N_sn,self.N_bin))
-            residu2=N.zeros((self.N_sn,self.N_comp))
-            chi2=N.zeros(self.N_sn)
-                     
-            for sn in range(self.N_sn):
-                
-                residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
-                residu2[sn]=self.data[sn,1:]-h[sn,1:]
-                         
-                chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
-
-            print chi2.sum()
-            self.chi2_inv_Rv_variation[R]=chi2.sum()
-
-        self.inv_Rv=copy.deepcopy(inv_Rv_save)
-        self.reddening_law=copy.deepcopy(red_law_save)
-        self.merge_slopes_and_data()
-
-
-
-
-if __name__=="__main__":
-
-     x=N.linspace(0,10,100)
-     z=N.linspace(0,15,100)
-     XZ=N.array((x,z))
-     y=N.zeros(len(x))
-     x_err=N.zeros(len(x))
-     y_err=N.zeros(len(x))
-    
-    
-     for i in range(len(x)):
-          y[i]=(x[i]+3.*z[i]+5.)
-          x_err[i]=2.*N.random.normal()
-          y_err[i]=5.*N.random.normal()
-          y[i]+=N.random.normal()*y_err[i]
-          x[i]+=N.random.normal()*x_err[i]
-
-
-     M=Multilinearfit(x,y,xerr=x_err,yerr=y_err,covx=None)
-     M.Multilinearfit(adddisp=False)
-    
-    
-     P.errorbar(x,y, linestyle='',xerr=x_err,yerr=y_err,ecolor='grey',alpha=1.0,zorder=0)
-     P.scatter(x,y,zorder=100,s=50)
-     P.plot(x,M.alpha*x+M.M0)
-
-    
-
-     P.show()
-    
+#p Chi2 ODR after a Global MultiLinear fit 
+#===========================================================================
+#
+#
+#s Map_chi2(global_fit):
+#
+#def __init__(self,Data,YY,CovXX,dYY,Wavelength,
+#             Dm_z=None,Alpha0=None,Reddening_law=None,
+#             MM00=None,HH0=None,BB_V=None,delta_M0=None,
+#             inv_RV=None,Disp_Matrix_Init=None,
+#             COlor=True,Delta_M_grey=True,ccm=True):
+#
+#
+#    global_fit.__init__(self,YY,dYY,Wavelength,dm_z=Dm_z,data=Data,CovX=CovXX,
+#                        alpha0=Alpha0,reddening_law=Reddening_law,M00=MM00,H0=HH0,
+#                        B_V=BB_V,Delta_M0=delta_M0,Disp_matrix_Init=Disp_Matrix_Init,
+#                        Color=COlor,delta_M_grey=Delta_M_grey,CCM=ccm)
+#
+#
+#    if inv_RV is not None:
+#        self.inv_Rv=inv_RV
+#    self.Range=50
+#
+#
+#def variate_chi2_alpha(self):
+#    
+#    if not self.intrinsic:
+#        return
+#
+#    self.separate_slopes_and_data()
+#     
+#    Alpha_save=copy.deepcopy(self.Alpha)
+#
+#    self.alpha_variation=N.zeros((self.N_bin,len(self.Alpha[0]),self.Range))
+#    self.chi2_alpha_variation=N.zeros((self.N_bin,len(self.Alpha[0]),self.Range))
+#
+#    for Bin in range(self.N_bin):
+#        print Bin
+#        for Comp in range(len(self.Alpha[0])):
+#            self.alpha_variation[Bin,Comp]=N.linspace(Alpha_save[Bin,Comp]-3.*N.std(Alpha_save[:,Comp]),Alpha_save[Bin,Comp]+3.*N.std(Alpha_save[:,Comp]),self.Range)
+#                 
+#            for R in range(self.Range):
+#                 
+#                self.Alpha[Bin,Comp]=copy.deepcopy(self.alpha_variation[Bin,Comp,R])
+#                self.merge_slopes_and_data()
+#      
+#                A=copy.deepcopy(self.A)
+#                h=copy.deepcopy(self.h)
+#     
+#                residu1=N.zeros((self.N_sn,self.N_bin))
+#                residu2=N.zeros((self.N_sn,self.N_comp))
+#                chi2=N.zeros(self.N_sn)
+#                 
+#                for sn in range(self.N_sn):
+#                     
+#                    residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#                    residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#                    chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#
+#
+#                self.chi2_alpha_variation[Bin,Comp,R]=chi2.sum()
+#
+#            self.Alpha=copy.deepcopy(Alpha_save)
+#            self.merge_slopes_and_data()
+#
+#def variate_chi2_M0(self):
+#     
+#    self.separate_slopes_and_data()
+#     
+#    M0_save=copy.deepcopy(self.M0)
+#
+#    self.M0_variation=N.zeros((self.N_bin,self.Range))
+#    self.chi2_M0_variation=N.zeros((self.N_bin,self.Range))
+#
+#    for Bin in range(self.N_bin):
+#        print Bin
+#        
+#        self.M0_variation[Bin]=N.linspace(M0_save[Bin]-3.*N.std(M0_save),M0_save[Bin]+3.*N.std(M0_save),self.Range)
+#                 
+#        for R in range(self.Range):
+#                 
+#            self.M0[Bin]=copy.deepcopy(self.M0_variation[Bin,R])
+#            self.merge_slopes_and_data()
+#      
+#            A=copy.deepcopy(self.A)
+#            h=copy.deepcopy(self.h)
+#     
+#            residu1=N.zeros((self.N_sn,self.N_bin))
+#            residu2=N.zeros((self.N_sn,self.N_comp))
+#            chi2=N.zeros(self.N_sn)
+#                 
+#            for sn in range(self.N_sn):
+#                     
+#                residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#                residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#                chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#
+#
+#            self.chi2_M0_variation[Bin,R]=chi2.sum()
+#
+#        self.M0=copy.deepcopy(M0_save)
+#        self.merge_slopes_and_data()
+#
+#
+#def variate_chi2_grey(self):
+#     
+#    self.separate_slopes_and_data()
+#     
+#    grey_save=copy.deepcopy(self.delta_M_GREY)
+#
+#    self.grey_variation=N.zeros((self.N_sn,self.Range))
+#    self.chi2_grey_variation=N.zeros((self.N_sn,self.Range))
+#
+#    for SN in range(self.N_sn):
+#        print SN
+#        
+#        self.grey_variation[SN]=N.linspace(grey_save[SN]-3.*N.std(grey_save),grey_save[SN]+3.*N.std(grey_save),self.Range)
+#                 
+#        for R in range(self.Range):
+#                 
+#            self.delta_M_GREY[SN]=copy.deepcopy(self.grey_variation[SN,R])
+#            self.merge_slopes_and_data()
+#      
+#            A=copy.deepcopy(self.A)
+#            h=copy.deepcopy(self.h)
+#     
+#            residu1=N.zeros((self.N_sn,self.N_bin))
+#            residu2=N.zeros((self.N_sn,self.N_comp))
+#            chi2=N.zeros(self.N_sn)
+#                 
+#            for sn in range(self.N_sn):
+#                     
+#                residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#                residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#                chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#                    
+#                
+#            self.chi2_grey_variation[SN,R]=chi2.sum()
+#
+#        self.delta_M_GREY=copy.deepcopy(grey_save)
+#        self.merge_slopes_and_data()
+#
+#
+#def variate_chi2_Av(self):
+#     
+#    self.separate_slopes_and_data()
+#     
+#    Av_save=copy.deepcopy(self.Av)
+#
+#    self.Av_variation=N.zeros((self.N_sn,self.Range))
+#    self.chi2_Av_variation=N.zeros((self.N_sn,self.Range))
+#
+#    for SN in range(self.N_sn):
+#        print SN
+#        
+#        self.Av_variation[SN]=N.linspace(Av_save[SN]-3.*N.std(Av_save),Av_save[SN]+3.*N.std(Av_save),self.Range)
+#                 
+#        for R in range(self.Range):
+#                 
+#            self.Av[SN]=copy.deepcopy(self.Av_variation[SN,R])
+#            self.merge_slopes_and_data()
+#      
+#            A=copy.deepcopy(self.A)
+#            h=copy.deepcopy(self.h)
+#     
+#            residu1=N.zeros((self.N_sn,self.N_bin))
+#            residu2=N.zeros((self.N_sn,self.N_comp))
+#            chi2=N.zeros(self.N_sn)
+#                 
+#            for sn in range(self.N_sn):
+#                     
+#                residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#                residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#                chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#                    
+#                
+#            self.chi2_Av_variation[SN,R]=chi2.sum()
+#
+#        self.Av=copy.deepcopy(Av_save)
+#        self.merge_slopes_and_data()
+#
+#
+#
+#def variate_chi2_xplus(self):
+#
+#    if not self.intrinsic:
+#        return
+#     
+#    self.separate_slopes_and_data()
+#     
+#    xplus_save=copy.deepcopy(self.xplus)
+#
+#    self.xplus_variation=N.zeros((self.N_sn,len(self.Alpha[0]),self.Range))
+#    self.chi2_xplus_variation=N.zeros((self.N_sn,len(self.Alpha[0]),self.Range))
+#
+#    for SN in range(self.N_sn):
+#        print SN
+#        for Comp in range(len(self.xplus[0])):
+#            self.xplus_variation[SN,Comp]=N.linspace(xplus_save[SN,Comp]-3.*N.std(xplus_save[:,Comp]),xplus_save[SN,Comp]+3.*N.std(xplus_save[:,Comp]),self.Range)
+#                 
+#            for R in range(self.Range):
+#                 
+#                self.xplus[SN,Comp]=copy.deepcopy(self.xplus_variation[SN,Comp,R])
+#                self.merge_slopes_and_data()
+#      
+#                A=copy.deepcopy(self.A)
+#                h=copy.deepcopy(self.h)
+#     
+#                residu1=N.zeros((self.N_sn,self.N_bin))
+#                residu2=N.zeros((self.N_sn,self.N_comp))
+#                chi2=N.zeros(self.N_sn)
+#                 
+#                for sn in range(self.N_sn):
+#                     
+#                    residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#                    residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#                    chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#                    
+#                
+#                self.chi2_xplus_variation[SN,Comp,R]=chi2.sum()
+#
+#            self.xplus=copy.deepcopy(xplus_save)
+#            self.merge_slopes_and_data()
+#
+#
+#
+#
+#    
+#def variate_chi2_Red_law_agno(self):
+#     
+#    self.separate_slopes_and_data()
+#     
+#    red_law_save=copy.deepcopy(self.reddening_law)
+#
+#    self.red_law_variation=N.zeros((self.N_bin,self.Range))
+#    self.chi2_red_law_variation=N.zeros((self.N_bin,self.Range))
+#
+#    for Bin in range(self.N_bin):
+#        print Bin
+#        
+#        self.red_law_variation[Bin]=N.linspace(red_law_save[Bin]-3.*N.std(red_law_save),red_law_save[Bin]+3.*N.std(red_law_save),self.Range)
+#                 
+#        for R in range(self.Range):
+#                 
+#            self.reddening_law[Bin]=copy.deepcopy(self.red_law_variation[Bin,R])
+#            self.merge_slopes_and_data()
+#      
+#            A=copy.deepcopy(self.A)
+#            h=copy.deepcopy(self.h)
+#     
+#            residu1=N.zeros((self.N_sn,self.N_bin))
+#            residu2=N.zeros((self.N_sn,self.N_comp))
+#            chi2=N.zeros(self.N_sn)
+#                 
+#            for sn in range(self.N_sn):
+#                     
+#                residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#                residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#                chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#
+#
+#            self.chi2_red_law_variation[Bin,R]=chi2.sum()
+#
+#        self.reddening_law=copy.deepcopy(red_law_save)
+#        self.merge_slopes_and_data()
+#
+#
+#
+#
+#def variate_chi2_inv_Rv(self):
+#     
+#    self.separate_slopes_and_data()
+#
+#    a_cardelli,b_cardelli=Astro.Extinction.extinctionParameters(self.wavelength,odonnell=False)
+#
+#    red_law_save=copy.deepcopy(self.reddening_law)
+#    inv_Rv_save=copy.deepcopy(self.inv_Rv)
+#
+#    self.inv_Rv_variation=N.linspace(inv_Rv_save-1,inv_Rv_save+1,self.Range)
+#    self.chi2_inv_Rv_variation=N.zeros(self.Range)
+#                 
+#    for R in range(self.Range):
+#                 
+#        self.reddening_law=copy.deepcopy(a_cardelli+self.inv_Rv_variation[R]*b_cardelli)
+#        self.merge_slopes_and_data()
+#      
+#        A=copy.deepcopy(self.A)
+#        h=copy.deepcopy(self.h)
+#     
+#        residu1=N.zeros((self.N_sn,self.N_bin))
+#        residu2=N.zeros((self.N_sn,self.N_comp))
+#        chi2=N.zeros(self.N_sn)
+#                 
+#        for sn in range(self.N_sn):
+#            
+#            residu1[sn]=self.Y[sn]-N.dot(A,N.matrix(h[sn]).T).T 
+#            residu2[sn]=self.data[sn,1:]-h[sn,1:]
+#                     
+#            chi2[sn]= N.dot(N.matrix(residu1[sn]),N.dot(self.WY[sn],N.matrix(residu1[sn]).T))+N.dot(N.matrix(residu2[sn]),N.dot(self.WX[sn],N.matrix(residu2[sn]).T))
+#
+#        print chi2.sum()
+#        self.chi2_inv_Rv_variation[R]=chi2.sum()
+#
+#    self.inv_Rv=copy.deepcopy(inv_Rv_save)
+#    self.reddening_law=copy.deepcopy(red_law_save)
+#    self.merge_slopes_and_data()
+#
+#
+#
+#
+#_name__=="__main__":
+#
+# x=N.linspace(0,10,100)
+# z=N.linspace(0,15,100)
+# XZ=N.array((x,z))
+# y=N.zeros(len(x))
+# x_err=N.zeros(len(x))
+# y_err=N.zeros(len(x))
+#
+#
+# for i in range(len(x)):
+#      y[i]=(x[i]+3.*z[i]+5.)
+#      x_err[i]=2.*N.random.normal()
+#      y_err[i]=5.*N.random.normal()
+#      y[i]+=N.random.normal()*y_err[i]
+#      x[i]+=N.random.normal()*x_err[i]
+#
+#
+# M=Multilinearfit(x,y,xerr=x_err,yerr=y_err,covx=None)
+# M.Multilinearfit(adddisp=False)
+#
+#
+# P.errorbar(x,y, linestyle='',xerr=x_err,yerr=y_err,ecolor='grey',alpha=1.0,zorder=0)
+# P.scatter(x,y,zorder=100,s=50)
+# P.plot(x,M.alpha*x+M.M0)
+#
+#
+#
+# P.show()
+#
 
         
    
