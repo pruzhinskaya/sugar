@@ -141,22 +141,22 @@ class SUGAR_plot:
         
         self.MAG_CORRECTED= Mag_all_sn
         P.figure(figsize=(12,12))
-        P.subplots_adjust(left=0.09, bottom=0.07, right=0.99, top=0.98,hspace=0.001)
+        P.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.995,hspace=0.001)
         for sn in range(len(self.sn_name)):
             P.subplot(2,1,1)
             if No_corrected:
                 if sn==0:
-                    P.plot(self.X,self.Mag_no_corrected[sn]+16.2,'r',alpha=0.5,label='Observed spectra')
+                    P.plot(self.X,self.Mag_no_corrected[sn]+16.2,'r',linewidth=3,alpha=0.5,label='Observed spectra')
                 else:
-                    P.plot(self.X,self.Mag_no_corrected[sn]+16.2,'r',alpha=0.5)
+                    P.plot(self.X,self.Mag_no_corrected[sn]+16.2,'r',linewidth=3,alpha=0.5)
 
             if sn==0:
-                P.plot(self.X,Mag_all_sn[sn]+20.5,'b',alpha=0.5,label='Corrected spectra ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)')
+                P.plot(self.X,Mag_all_sn[sn]+20.5,'b',linewidth=3,alpha=0.5,label='Corrected spectra ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)')
             else:
-                P.plot(self.X,Mag_all_sn[sn]+20.5,'b',alpha=0.5)
+                P.plot(self.X,Mag_all_sn[sn]+20.5,'b',linewidth=3,alpha=0.5)
 
 
-        P.ylabel('Mag AB + cst')
+        P.ylabel('Mag AB + cst',fontsize=20)
         P.ylim(-5,7)
         P.xticks([2500.,9500.],['toto','pouet'])
         P.xlim(self.X[0]-60,self.X[-1]+60)
@@ -166,13 +166,13 @@ class SUGAR_plot:
         STD_no_correct=N.std(self.Mag_no_corrected,axis=0)
         P.subplot(2,1,2)
         if No_corrected:
-            P.plot(self.X,STD_no_correct,'r',label=r'Observed STD average floor $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD_no_correct[self.floor_filter])))
+            P.plot(self.X,STD_no_correct,'r',linewidth=3,label=r'Observed RMS average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD_no_correct[self.floor_filter])))
 
-        P.plot(self.X,STD,'b',label=r'Corrected STD average floor $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD[self.floor_filter])))
+        P.plot(self.X,STD,'b',linewidth=3,label=r'Corrected RMS average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD[self.floor_filter])))
 
         P.plot(self.X,N.zeros(len(self.X)),'k')
-        P.ylabel('STD')
-        P.xlabel('wavelength [$\AA$]')
+        P.ylabel('RMS (mag)',fontsize=20)
+        P.xlabel('wavelength [$\AA$]',fontsize=20)
         P.xlim(self.X[0]-60,self.X[-1]+60)
         P.ylim(0.0,0.62)
         P.legend()
@@ -287,9 +287,9 @@ class SUGAR_plot:
 
         for correction in range(len(self.alpha[0])):
 
-            P.figure(figsize=(12,10))
+            P.figure(figsize=(7,6))
             gs = gridspec.GridSpec(2, 1,height_ratios=[2,1])
-            P.subplots_adjust(left=0.09, bottom=0.07, right=0.99, top=0.95,hspace=0.001)
+            P.subplots_adjust(left=0.13, bottom=0.11, right=0.99, top=0.95,hspace=0.001)
 
             #ax1=subplot(211)
             P.subplot(gs[0])
@@ -305,10 +305,10 @@ class SUGAR_plot:
 
             P.fill_between(self.X,self.M0+19.2,y_plus,color='m',alpha=0.7 )
             P.fill_between(self.X,y_moins,self.M0+19.2,color='g',alpha=0.7)
-            p3 = P.plot(self.X,self.M0+19.2,'b',label='toto')
-            P.ylim(-0.5,1.3)
+            p3 = P.plot(self.X,self.M0+19.2,'b',linewidth=2,label='toto')
+            P.ylim(-0.6,1.4)
             P.gca().invert_yaxis()
-            P.ylabel('$M_0(t=0,\lambda) + cst$')
+            P.ylabel('$M_0(t=0,\lambda) +$ cst. (mag)',fontsize=16)
             P.title(r'Average spectrum with $\pm$1$\sigma$ variation ($\alpha_{%i}(t=0,\lambda)$)'%(correction+1))
             p1 = P.Rectangle((0, 0), 1, 1, fc="magenta")
             p2 = P.Rectangle((0, 0), 1, 1, fc="green")
@@ -322,9 +322,9 @@ class SUGAR_plot:
                 P.fill_between(self.X,self.alpha[:,correction]-self.alpha_err_Jackknife[:,correction],self.alpha[:,correction]+self.alpha_err_Jackknife[:,correction],color='b',alpha=0.7 )
 
             mean_effect=N.std(self.data[:,correction])*N.mean(abs(self.alpha[:,correction]))
-            P.plot(self.X,self.alpha[:,correction],'b',label=r'Average effect (mag)=%.3f'%((mean_effect)))
-            P.ylabel(r'$\alpha_{%i}(t=0,\lambda)$'%(correction+1))
-            P.xlabel('wavelength [$\AA$]')
+            P.plot(self.X,self.alpha[:,correction],'b',linewidth=3)#,label=r'Average effect (mag)=%.3f'%((mean_effect)))
+            P.ylabel(r'$\alpha_{%i}(t=0,\lambda)$'%(correction+1),fontsize=16)
+            P.xlabel('wavelength [$\AA$]',fontsize=16)
             P.xlim(self.X[0]-60,self.X[-1]+60)
 
             P.legend(loc=4)
@@ -442,7 +442,7 @@ class SUGAR_plot:
     
         
         CCM31=Astro.Extinction.extinctionLaw(self.X,Rv=3.1,law='CCM89')
-        CCM26=Astro.Extinction.extinctionLaw(self.X,Rv=2.6,law='CCM89')
+        CCM26=Astro.Extinction.extinctionLaw(self.X,Rv=2.7,law='CCM89')
         CCM14=Astro.Extinction.extinctionLaw(self.X,Rv=1.4,law='CCM89')
         Ind_med=(len(self.X)/2)-1
         CCM31/=CCM31[Ind_med]
@@ -454,7 +454,7 @@ class SUGAR_plot:
         
 
         P.figure(figsize=(11,11))
-        P.subplots_adjust(left=0.12, bottom=0.07, right=0.99, top=0.99)
+        P.subplots_adjust(left=0.12, bottom=0.07, right=0.99, top=0.995)
         MAG=copy.deepcopy(Mag_all_sn)
         
         for sn in range(len(MAG[:,0])):
@@ -467,7 +467,7 @@ class SUGAR_plot:
      
         self.MAG=MAG
 
-        P.subplot(2,1,1)
+        P.subplot(2,1,2)
 
         for i,sn in enumerate(self.sn_name):
             if sn =='SN2007le':
@@ -481,23 +481,23 @@ class SUGAR_plot:
             
         P.plot(AVV,slopes[Bin]*AVV,'r',label='$\gamma_{%i\AA}$'%(self.X[Bin]))
         P.plot(AVV,CCM31[Bin]*AVV,'k--',linewidth=3,label='CCM $(R_V=3.1)$')
-        P.plot(AVV,CCM26[Bin]*AVV,'r--',linewidth=3,label='CCM $(R_V=2.6)$')
+        P.plot(AVV,CCM26[Bin]*AVV,'r--',linewidth=3,label='CCM $(R_V=2.7)$')
         P.plot(AVV,CCM14[Bin]*AVV,'k-.',linewidth=3,label='CCM $(R_V=1.4)$')
-        P.ylabel('$M(t=0,\lambda)-M_0(t=0,\lambda) - \sum_{i=1}^{i=3} \\alpha_i(0,\lambda) q_i$',fontsize=14)
-        P.xlabel('$A_{\lambda_0}$',fontsize=16)
-        P.title(r'$\lambda=%i \AA$'%(self.X[Bin]))
+        P.ylabel('$M(t=0,\lambda)-M_0(t=0,\lambda) - \sum_{i=1}^{i=3} \\alpha_i(0,\lambda) q_i$',fontsize=18)
+        P.xlabel('$A_{\lambda_0}$',fontsize=20)
+        P.text(-0.55,1.55,r'$\lambda=%i \AA$'%(self.X[Bin]),fontsize=20)
         P.ylim(min(MAG[:,Bin])-0.3,max(MAG[:,Bin])+0.3)
         #gca().invert_yaxis()
         P.legend(loc=4)
 
-        P.subplot(2,1,2)
+        P.subplot(2,1,1)
         P.scatter(self.X[Bin],slopes[Bin],c='r',marker='o',s=100)
         P.plot(self.X,slopes,'r',label= '$\gamma_{\lambda}$')
         P.plot(self.X,CCM31,'k-.',linewidth=3,label= 'CCM $(R_V=3.1)$')
-        P.plot(self.X,CCM26,'r--',linewidth=3,label= 'CCM $(R_V=2.6)$')
+        P.plot(self.X,CCM26,'r--',linewidth=3,label= 'CCM $(R_V=2.7)$')
         P.plot(self.X,CCM14,'k--',linewidth=3,label= 'CCM $(R_V=1.4)$')
-        P.ylabel(r'$(\partial A_{\lambda}$ / $\partial A_V)$',fontsize=16)
-        P.xlabel('wavelength [$\AA$]')        
+        P.ylabel(r'$(\partial A_{\lambda}$ / $\partial A_V)$',fontsize=20)
+        P.xlabel('wavelength [$\AA$]',fontsize=20)
         P.ylim(0.4,2.1)
         P.xlim(self.X[0]-60,self.X[-1]+60)
         P.legend()
@@ -604,7 +604,7 @@ def plot_disp_eig(LIST_dic):
     P.figure(figsize=(20,20))
     P.subplot(2,1,1)
     P.subplots_adjust(left=0.05, bottom=0.07, right=0.99, top=0.99,hspace=0.001)
-    P.xlabel('wavelength [$\AA$]')
+    P.xlabel('wavelength [$\AA$]',fontsize=20)
     P.legend()
 
     for i in range(len(LIST_dic)+1):
@@ -618,7 +618,7 @@ def plot_disp_eig(LIST_dic):
 
         P.plot(X[0],STD[i],COLOR[i],label=LABEL,linewidth=3)
 
-    P.ylabel('STD (mag)')
+    P.ylabel('RMS (mag)',fontsize=20)
 
     P.ylim(0,0.65)
     P.xticks([3100,8800],['',''])
@@ -632,10 +632,10 @@ def plot_disp_eig(LIST_dic):
             LABEL='$\gamma_{\lambda}$ (with %i factors)'%(i+1)
         P.plot(X[0],color_law[i],COLOR[i+1],linewidth=3,label=LABEL)
 
-    P.ylabel(r'$(\partial A_{\lambda}$ / $\partial A_V)$')
+    P.ylabel(r'$\gamma(\lambda)$',fontsize=20)
     P.xticks([4000,5000,6000,7000,8000],['4000','5000','6000','7000','8000'])
     P.xlim(3200,8700)
-    P.xlabel('wavelength [$\AA$]')
+    P.xlabel('wavelength [$\AA$]',fontsize=20)
     P.ylim(0,2.2)
     P.legend()
 
@@ -669,9 +669,9 @@ def plot_vec_emfa(LIST_dic,vec,ALIGN=[1,1,1,1,1]):
             
             P.plot(X[0],ALIGN[i]*STD[i][j],COLOR[i],label=LABEL,linewidth=3)
 
-        P.ylabel('$\Lambda_{%i}$'%(j+1),fontsize=16)
+        P.ylabel('$\Lambda_{%i}$'%(j+1),fontsize=20)
         P.xticks([4000,5000,6000,7000,8000],['4000','5000','6000','7000','8000'])
-        P.xlabel('wavelength [$\AA$]')
+        P.xlabel('wavelength [$\AA$]',fontsize=20)
     #P.ylim(0,0.65)
 
         P.xlim(3200,8700)
@@ -698,33 +698,18 @@ if __name__=='__main__':
     
     lst_dic=[]
     for i in range(5):
-        lst_dic.append(path+'/data_output/SUGAR_model_for_phd/model_at_max_%i_eigenvector_without_grey_without_MFR_problem.pkl'%(i+1))
+        #lst_dic.append(path+'/data_output/SUGAR_model_for_phd/model_at_max_%i_eigenvector_without_grey_without_MFR_problem.pkl'%(i+1))
+        lst_dic.append('../../Desktop/sugar_paper_output/model_at_max_%i_eigenvector_without_grey_with_sigma_clipping.pkl'%(i+1))
     
     plot_disp_eig(lst_dic)
-    #P.savefig('../These_plot/plot_phd/Chapitre7/STD_choice_eigenvector.pdf')
+    P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
     plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])
+    P.savefig('plot_paper/STD_choice_eigenvector.pdf')
+    
+    #SP=SUGAR_plot('../../Desktop/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')
+    #SP.plot_bin_Av_slope(42)
+    #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
+    #SP.plot_spectrum_corrected()
+    #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
+    #SP.plot_spectral_variability(name_fig=None)
 
-
-    SP=SUGAR_plot(path+'/data_output/SUGAR_model_for_phd/model_at_max_3_eigenvector_without_grey_without_MFR_problem_test_RV_save_before_PCA.pkl')
-    #SP.plot_projection_ortho()
-    #SP.plot_Av_distri()
-    #SP.plot_Av_vs_color('/sps/snovae/user/leget/CABALLO/META_JLA.pkl')
-    SP.plot_bin_Av_slope(42)
-    SP.plot_spectrum_corrected()
-    #    P.savefig('../These_plot/plot_phd/Chapitre7/all_spectrum_corrected_without_grey_with_%i_eigenvector.pdf'%(i+1))
-    #SP=SUGAR_plot('/sps/snovae/user/leget/CABALLO/model_training_SUGAR/model_at_max_3_eigenvector_save_before_PCA.pkl')
-     #   FIG=[]
-     #   for j in range(i+1):
-
-            #FIG1='../These_plot/plot_septembre_2015/plot_at_max/FIG1_%i_eigenvectorSI_%i_eigenvector_on_residuals_without_grey.pdf'%((i+1,j+1))
-            #FIG2='../These_plot/plot_septembre_2015/plot_at_max/FIG2_%i_eigenvectorSI_%i_eigenvector_on_residuals_without_grey.pdf'%((i+1,j+1))
-
-      #      FIG.append('Fit_%i_eigenvectorSI_%i_eigenvector_without_grey.pdf'%((i+1,j+1)))
-    SP.plot_spectral_variability(name_fig=None)
-            #SP.spectra_corrected_pca_residuals(j,Name_fig=[FIG1,FIG2])
-        #SP.plot_spectrum_corrected()
-        #P.savefig('../These_plot/plot_septembre_2015/plot_at_max/spectra_corrected_%i_without_grey.pdf'%(i+1))
-        #SP.plot_color_law()
-        #P.savefig('../These_plot/plot_septembre_2015/plot_at_max/color_law_%i_without_grey.pdf'%(i+1))
-        #SP.plot_corr_matrix()
-        #P.savefig('../These_plot/plot_septembre_2015/plot_at_max/corr_matrix_%i_without_grey.pdf'%(i+1))

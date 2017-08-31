@@ -206,9 +206,9 @@ def run_emfa_analysis(output_file=None, sigma_clipping=False):
         path = os.path.dirname(sugar.__file__)
         output_file = path + '/data_output/emfa_output.pkl'
 
-    si_analysis.emfa(output_file,sigma_clipping=False,
+    si_analysis.emfa(output_file,sigma_clipping=sigma_clipping,
                      chi2emfa=True,bic=False)
 
 if __name__ == '__main__':
 
-    run_emfa_analysis(output_file=None, sigma_clipping=False)
+    run_emfa_analysis(output_file=None, sigma_clipping=True)

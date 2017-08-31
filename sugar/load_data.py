@@ -32,6 +32,8 @@ class load_data_sugar:
         for i in range(len(self.sn_name)):
             if dic[self.sn_name[i]]['spectra']['days'] > self.mjd_cut:
                 filter_mjd[i] = False
+            if self.sn_name[i] =='SN2005cf':
+                filter_mjd[i] = False
 
         self.sn_name = np.array(self.sn_name)[filter_mjd]
         self.sn_name.sort()

@@ -38,8 +38,10 @@ class emfa_plot:
         dic_emfa = cPickle.load(open(path+'/data_output/emfa_output.pkl'))
         self.val = dic_emfa['val']
         self.vec = dic_emfa['vec']
-        self.si_norm = dic_emfa['Norm_data']
-        self.si_norm_err = dic_emfa['Norm_err']
+        self.si_norm = dic_emfa['Norm_data'][dic_emfa['filter']]
+        self.si_norm_err = dic_emfa['Norm_err'][dic_emfa['filter']]
+        self.sn_name = dic_emfa['sn_name']
+        self.filtre = dic_emfa['filter']
 
 
     def plot_eigenvalues(self,noise=False):
@@ -139,7 +141,7 @@ class emfa_plot:
         Ticks=[]
         for j in range(len(new_base[0])):
             corrs.append(dic_corr_vec['corr_vec%i'%(j)])
-            ylabels.append(r'$vec_{%i}$'%(j+1))
+            ylabels.append(r'$q_{%i}$'%(j+1))
             Ticks.append(4-j)
         
         for i,corr in enumerate(corrs):
@@ -227,8 +229,8 @@ class emfa_plot:
         for i in range(len(data_sugar.zhelio)):
             delta_mu[i] -= sugar.distance_modulus(data_sugar.zhelio[i],data_sugar.zcmb[i])
 
-        data = np.array([data_sugar.X1,data_sugar.C,delta_mu]).T
-        err = np.array([data_sugar.X1_err,data_sugar.C_err,data_sugar.mb_err]).T
+        data = np.array([data_sugar.X1,data_sugar.C,delta_mu]).T[self.filtre]
+        err = np.array([data_sugar.X1_err,data_sugar.C_err,data_sugar.mb_err]).T[self.filtre]
 
         self.data = data
         self.err = err
@@ -280,7 +282,7 @@ class emfa_plot:
         Ticks=[]
         for j in range(len(new_base[0])):
             corrs.append(dic_corr_vec['corr_vec%i'%(j)])
-            ylabels.append(r'$vec_{%i}$'%(j+1))
+            ylabels.append(r'$q_{%i}$'%(j+1))
             Ticks.append(4-j)
         
         for i,corr in enumerate(corrs):

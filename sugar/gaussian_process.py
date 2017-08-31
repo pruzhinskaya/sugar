@@ -260,6 +260,25 @@ class gp_sed:
 
         gp_files.close()
 
+    def write_output_slow(self):
+        path = os.path.dirname(sugar.__file__)
+
+        for sn in range(len(self.sn_name)):
+            print sn+1,'/',len(self.sn_name)
+            fichier=open(path+'/data_output/gaussian_process/gp_predict/'+self.sn_name[sn]+'.predict','w')
+            number_bin = len(self.dic[self.sn_name[sn]].keys())
+            for Bin in range(number_bin):
+                dic = self.dic[self.sn_name[sn]]['bin%i'%(Bin)]
+                TIME = dic['time']
+                for t in range(len(TIME)):
+                    fichier.write('%.5f    %.5f    %.5f'%((TIME[t],dic['wavelength'],dic['prediction'][t])))
+                    for tt in range(len(TIME)):
+                        if tt == (len(TIME)-1):
+                            fichier.write('    %.5f \n'%(dic['covariance'][t,tt]))
+                        else:
+                            fichier.write('    %.5f'%(dic['covariance'][t,tt]))
+        fichier.close()
+
 if __name__=="__main__":
 
     import time
@@ -267,6 +286,7 @@ if __name__=="__main__":
     gp = gp_sed(hsiao_empca=True)
     gp.gaussian_process_regression()
     gp.write_output()
+    gp.write_output_slow()
     #for i in range(5):
     #    del gp
     #    gp = gp_sed(hsiao_empca=False)
