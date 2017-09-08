@@ -61,19 +61,20 @@ class emfa_plot:
         xlim = plt.xlim(0,len(self.val)+1)
         plt.plot([xlim[0],xlim[1]],[0,0],'k',linewidth=2)
         
+        plt.plot(x_axis,val_100,'b-',linewidth=3,label='eigenvalue')
+        plt.scatter(x_axis,val_100,c='b',s=75)
+
         if noise:
             val_100 = (self.val/(len(self.val)))*100.
             noise_level = (len(self.val) - np.sum(self.val)) / len(self.val) * 100.
-            plt.plot(x_axis,noise_level*np.ones_like(x_axis),'r',linewidth=3)
-
-        plt.plot(x_axis,val_100,'b-',linewidth=3)
-        plt.scatter(x_axis,val_100,c='b',s=75)
-
+            plt.plot([xlim[0],xlim[1]],noise_level*np.ones(2),'r',linewidth=3,label='noise level')
+        
         plt.xticks(x_axis)
-        plt.yticks(np.linspace(0,40,5))
-        plt.ylim(-2,45)
+        plt.yticks(np.linspace(0,40,9))
+        plt.ylim(-1,42)
         plt.ylabel('variability on each component (%)',fontsize=20)
         plt.xlabel('Factor analysis component',fontsize=20)
+        plt.legend()
 
 
     def plot_pf_corr_factor_si(self,split=5):
@@ -348,6 +349,6 @@ class emfa_plot:
 if __name__=='__main__':
 
     faplot = emfa_plot()
-    faplot.plot_eigenvalues()
-    faplot.plot_pf_corr_factor_si(split=5)
-    faplot.plot_pf_corr_factor_salt2(split=5)
+    faplot.plot_eigenvalues(noise=True)
+    #faplot.plot_pf_corr_factor_si(split=5)
+    #faplot.plot_pf_corr_factor_salt2(split=5)

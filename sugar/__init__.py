@@ -24,6 +24,7 @@ from .math_toolbox import cholesky_inverse
 from .cosmology import distance_modulus
 
 from .emfa_analysis import run_emfa_analysis
-from .multilinearfit import global_fit
+from .sed_fitting import multilinearfit
+from .multilinearfit import Multilinearfit
 
 
