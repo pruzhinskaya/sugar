@@ -25,6 +25,5 @@ from .cosmology import distance_modulus
 
 from .emfa_analysis import run_emfa_analysis
 from .sed_fitting import multilinearfit
-from .multilinearfit import Multilinearfit
-
+from .sed_fitting import sugar_fitting
 

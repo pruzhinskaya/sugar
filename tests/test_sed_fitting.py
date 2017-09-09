@@ -60,7 +60,7 @@ def test_init(plot=False):
     
     for i in range(len(wave)):
         print i+1,'/',len(wave)
-        mlf = sugar.Multilinearfit(x,y[:,i],yerr=y_err[:,i],covx=x_err)
+        mlf = sugar.multilinearfit(x,y[:,i],yerr=y_err[:,i],covx=x_err)
         mlf.Multilinearfit(adddisp=False,PRINT=False)
         y_corrected[:,i] = mlf.y_corrected
         alpha[:,i] = mlf.alpha
@@ -84,15 +84,53 @@ def test_init(plot=False):
         plt.subplot(4,1,4)
         plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
         plt.plot(wave,m0,'b',linewidth=3)
+
+
+def test_global_fit(plot=False):
+    """
+    test initialisation of sed_fitting
+    """
+    nsn = 40
+    y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(nsn,plot=False)
+    covy = np.zeros((nsn,len(wave),len(wave)))
+    for i in range(nsn):
+        covy[i] = np.eye(len(wave))*y_err[i]
+
+    sedfit = sugar.sugar_fitting(x, y, x_err, covy,
+                                 wave, size_bloc=None,
+                                 fit_grey=False)
+    sedfit.init_fit()
+    sedfit.comp_chi2()
+    sedfit.separate_component()
+    
+
+    if plot:
+        import pylab as plt
+        plt.figure(figsize=(8,8))
+        for i in range(3):
+            plt.subplot(4,1,i+1)
+            plt.plot(wave,alpha_truth[i],'r',linewidth=5)
+            plt.plot(wave,sedfit.alpha[:,i],'b',linewidth=3)
+            plt.subplot(4,1,4)
+            plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
+            plt.plot(wave,sedfit.m0,'b',linewidth=3)
+                                                                                                                                                
+    return sedfit
+        
         
 if __name__=='__main__':
 
-
-    #y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(100,plot=False)
-    #i = 1
-    #mlf = sugar.Multilinearfit(x,y[:,i],covx=x_err,yerr=y_err[:,i])
-    #mlf.Multilinearfit(adddisp=True,PRINT=False)
-             
-    
     import pylab as plt
-    test_init(plot=True)
+    #test_init(plot=True)
+    #sed = test_global_fit(plot=False)
+
+    residu1 = sed.y - np.dot(sed.A,sed.h.T).T
+    residu2 = sed.x[:,1:] - sed.h[:,1:]
+    chi2 = np.einsum("ij,ijk,ik->",residu1,sed.wy,residu1) + np.einsum("ij,ijk,ik->",residu2,sed.wx,residu2)
+    
+    #for sn in range(sed.nsn):
+    #    chi2+= np.dot(np.matrix(residu1[sn]),sed.wy[sn].dot(np.matrix(residu1[sn]).T))+np.dot(np.matrix(residu2[sn]),np.dot(sed.wx[sn],np.matrix(residu2[sn]).T))
+
+    
+
+
