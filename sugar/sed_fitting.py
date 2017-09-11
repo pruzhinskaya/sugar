@@ -2,7 +2,7 @@
 
 import numpy as np
 import scipy.odr as odrs
-from scipy import optimize
+from scipy import optimize, linalg
 import sugar
 import copy
 import os
@@ -284,7 +284,7 @@ class sugar_fitting:
 
         self.fit_grey = fit_grey
         self.size_bloc = size_bloc
-        
+                                     
         self._x = x
         self._h = copy.deepcopy(self._x)
         self.y = y
@@ -297,7 +297,11 @@ class sugar_fitting:
         self.nslopes = len(self._x[0]) + 1
         self.nbin = len(self.y[0])
         self.dof = (self.nsn*self.nbin) - (self.nbin*(self.nslopes)) - self.grey*self.nsn
-        
+
+        self.filter_grey=np.array([True]*(self.ncomp+1))
+        if self.fit_grey:
+            self.filter_grey[1]=False
+
         # the one is for the mean spectrum        
         self.x = np.zeros((self.nsn,self.ncomp+1))
         self.x[:,0] = 1
@@ -352,10 +356,15 @@ class sugar_fitting:
         This is this chi2 which minimized
         in this chi2. 
         """
-        residuy = self.y - np.dot(self.A,self.h.T).T
-        residux = self.x[:,1:] - self.h[:,1:]
-        self.chi2 = np.einsum("ij,ijk,ik->",residuy,self.wy,residuy) + np.einsum("ij,ijk,ik->",residux,self.wx,residux)
-
+        #residuy = self.y - np.dot(self.A,self.h.T).T
+        #residux = self.x[:,1:] - self.h[:,1:]
+        #self.chi2 = np.einsum("ij,ijk,ik->",residuy,self.wy,residuy) + np.einsum("ij,ijk,ik->",residux,self.wx,residux)
+        chi2 = 0.
+        for sn in range(self.nsn):
+            residu1 = self.y[sn] - np.dot(self.A,np.matrix(self.h[sn]).T).T
+            residu2 = self.x[sn,1:] - self.h[sn,1:]
+            chi2 += np.dot(np.matrix(residu1),self.wy[sn].dot(np.matrix(residu1).T))+np.dot(np.matrix(residu2),np.dot(self.wx[sn],np.matrix(residu2).T))
+        chi2 = chi2[0,0]
 
     def e_step(self):
         """
@@ -373,22 +382,16 @@ class sugar_fitting:
         for sn in range(self.nsn):
             
             Y[sn]=self.y[sn] - self.m0
-            T=np.dot(self.alpha.T,self.wy[sn].dot(self.alpha))+self.WX[j]
-            A[j]=np.linalg.inv(T)
-            B[j]=(np.dot(self.alpha.T,self.WY[j].dot(np.matrix(Y[j]).T))+np.dot(self.WX[j],np.matrix(self.data[j,1:]).T)).T
+            T=np.dot(self.alpha.T,self.wy[sn].dot(self.alpha))+self.wx[sn]
+            A[sn]=np.linalg.inv(T)
+            B[sn]=(np.dot(self.alpha.T,self.wy[sn].dot(np.matrix(Y[sn]).T))+np.dot(self.wx[sn],np.matrix(self.x[sn,1:]).T)).T
               
-            H[j]=(np.dot(A[j],np.matrix(B[j]).T)).T
+            H[sn]=(np.dot(A[sn],np.matrix(B[sn]).T)).T
               
-        if self.Parallel:
-            h=np.zeros((self.N_sn,self.N_comp))
-            self.comm.Allgatherv(H,h)
-            self.comm.Barrier()
-        else:
-            h=H
-              
-        self.h[:,1:]=h
+        self.h[:,1:]=H
 
-        if self.delta_M_grey:
+        if self.fit_grey:
+            print 'WARNING NOT IMPLEMENTED'
             # mean of grey = 0
             mean_grey=copy.deepcopy(np.mean(self.h[:,1]))
             self.h[:,1]-=mean_grey
@@ -410,7 +413,7 @@ class sugar_fitting:
             
  
     def decorrelate_grey_h(self):
-
+        print 'WARNING NOT IMPLEMENTED'
         h=copy.deepcopy(self.xplus)
         self.add_cst_Av=0
         self.add_cst_xplus=np.zeros(len(self.xplus[0]))
@@ -425,59 +428,36 @@ class sugar_fitting:
 
     def m_step(self):
 
-        if self.SPARSE:
-            raise NameError('numpy array is needed for this fonction')
-
-
-        if self.delta_M_grey:
-            if self.CCM and not self.Color:
-                Y=copy.deepcopy(self.Y)-(self.h[self.Filtre_parallel][:,1]*np.ones(np.shape(self.Y)).T).T-(self.h[self.Filtre_parallel][:,2]*(self.A[:,2]*np.ones(np.shape(self.Y))).T).T
-            else:
-                Y=copy.deepcopy(self.Y)-(self.h[self.Filtre_parallel][:,1]*np.ones(np.shape(self.Y)).T).T
+        if self.fit_grey:
+            Y = copy.deepcopy(self.y) - (self.h*np.ones(np.shape(self.y)).T).T
         else:
-            if self.CCM and not self.Color:
-                Y=copy.deepcopy(self.Y)-(self.h[self.Filtre_parallel][:,1]*(self.A[:,1]*np.ones(np.shape(self.Y))).T).T
-            else:
-                Y=copy.deepcopy(self.Y)
+            Y = copy.deepcopy(self.y)
 
-        self.A_vector=np.zeros(self.N_slopes*self.N_bin)
-        hh_kron_W=np.zeros((len(self.A_vector),len(self.A_vector)))
-        sum_WYh=np.zeros(np.shape(self.A[:,self.filter_grey_CCM]))
-        self.sum_WYh_vector=np.zeros(len(self.A_vector))
+        self.A_vector = np.zeros(self.nslopes*self.nbin)
+        hh_kron_W = np.zeros((len(self.A_vector),len(self.A_vector)))
+        sum_WYh = np.zeros(np.shape(self.A[:,self.filter_grey]))
+        self.sum_WYh_vector = np.zeros(len(self.A_vector))
 
-        for j in range(self.Number_loop):
-            if self.Parallel:
-                sn=self.START+j
-            else:
-                sn=j
-            h_ht=np.dot(np.matrix(self.h[sn,self.filter_grey_CCM]).T,np.matrix(self.h[sn,self.filter_grey_CCM]))
-            hh_kron_W+=np.kron(h_ht,self.WY[j])
-            sum_WYh+=np.dot(self.WY[j],np.dot(np.matrix(Y[j]).T,np.matrix(self.h[sn,self.filter_grey_CCM])))
+        for sn in range(self.nsn):
+            h_ht = np.dot(np.matrix(self.h[sn,self.filter_grey]).T,np.matrix(self.h[sn,self.filter_grey]))
+            hh_kron_W += np.kron(h_ht,self.wy[sn])
+            sum_WYh += np.dot(self.wy[sn],np.dot(np.matrix(Y[sn]).T,np.matrix(self.h[sn,self.filter_grey])))
 
-        if self.Parallel:
-            self.hh_kron_W=np.zeros((len(self.A_vector),len(self.A_vector)))
-            self.sum_WYh=np.zeros(np.shape(self.A[:,self.filter_grey_CCM]))
-
-            self.comm.Allreduce(hh_kron_W,self.hh_kron_W)
-            self.comm.Allreduce(sum_WYh,self.sum_WYh)
-            self.comm.Barrier()
-
-        else:
-            self.hh_kron_W=hh_kron_W
-            self.sum_WYh=sum_WYh
+            self.hh_kron_W = hh_kron_W
+            self.sum_WYh = sum_WYh
 
          # deroulage des matrices en vecteur
 
-        for i in range(self.N_slopes):
-            self.sum_WYh_vector[i*self.N_bin:][:self.N_bin]=self.sum_WYh[:,i]
+        for i in range(self.nslopes):
+            self.sum_WYh_vector[i*self.nbin:][:self.nbin] = self.sum_WYh[:,i]
 
-        X_cho=linalg.cho_factor(self.hh_kron_W)
-        self.A_vector=linalg.cho_solve(X_cho,self.sum_WYh_vector)
+        X_cho = linalg.cho_factor(self.hh_kron_W)
+        self.A_vector = linalg.cho_solve(X_cho,self.sum_WYh_vector)
 
-        new_slopes=np.zeros(np.shape(self.A[:,self.filter_grey_CCM]))
-        for i in range(self.N_slopes):
-            new_slopes[:,i]=self.A_vector[i*self.N_bin:][:self.N_bin]
-        self.A[:,self.filter_grey_CCM]=new_slopes
+        new_slopes = np.zeros(np.shape(self.A[:,self.filter_grey]))
+        for i in range(self.nslopes):
+            new_slopes[:,i] = self.A_vector[i*self.nbin:][:self.nbin]
+        self.A[:,self.filter_grey] = new_slopes
     
     def run_fit(self):
 

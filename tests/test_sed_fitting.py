@@ -90,7 +90,7 @@ def test_global_fit(plot=False):
     """
     test initialisation of sed_fitting
     """
-    nsn = 40
+    nsn = 30
     y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(nsn,plot=False)
     covy = np.zeros((nsn,len(wave),len(wave)))
     for i in range(nsn):
@@ -102,7 +102,8 @@ def test_global_fit(plot=False):
     sedfit.init_fit()
     sedfit.comp_chi2()
     sedfit.separate_component()
-    
+    sedfit.e_step()
+    sedfit.m_step()
 
     if plot:
         import pylab as plt
@@ -122,14 +123,9 @@ if __name__=='__main__':
 
     import pylab as plt
     #test_init(plot=True)
-    #sed = test_global_fit(plot=False)
+    sed = test_global_fit(plot=False)
 
-    residu1 = sed.y - np.dot(sed.A,sed.h.T).T
-    residu2 = sed.x[:,1:] - sed.h[:,1:]
-    chi2 = np.einsum("ij,ijk,ik->",residu1,sed.wy,residu1) + np.einsum("ij,ijk,ik->",residu2,sed.wx,residu2)
-    
-    #for sn in range(sed.nsn):
-    #    chi2+= np.dot(np.matrix(residu1[sn]),sed.wy[sn].dot(np.matrix(residu1[sn]).T))+np.dot(np.matrix(residu2[sn]),np.dot(sed.wx[sn],np.matrix(residu2[sn]).T))
+        
 
     
 
