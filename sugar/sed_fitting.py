@@ -326,7 +326,8 @@ class sugar_fitting:
         self.A[:,0]=self.m0
         self.A[:,1:]=self.alpha
 
-        self.chi2 =None
+        self.chi2 = None
+        self.chi2_save = None
 
     def init_fit(self, alpha=None, M0=None, delta_m_grey=None):
         
@@ -364,7 +365,7 @@ class sugar_fitting:
             residu1 = self.y[sn] - np.dot(self.A,np.matrix(self.h[sn]).T).T
             residu2 = self.x[sn,1:] - self.h[sn,1:]
             chi2 += np.dot(np.matrix(residu1),self.wy[sn].dot(np.matrix(residu1).T))+np.dot(np.matrix(residu2),np.dot(self.wx[sn],np.matrix(residu2).T))
-        chi2 = chi2[0,0]
+        self.chi2 = chi2[0,0]
 
     def e_step(self):
         """
@@ -382,9 +383,9 @@ class sugar_fitting:
         for sn in range(self.nsn):
             
             Y[sn]=self.y[sn] - self.m0
-            T=np.dot(self.alpha.T,self.wy[sn].dot(self.alpha))+self.wx[sn]
+            T=np.dot(self.A[:,1:].T,self.wy[sn].dot(self.A[:,1:]))+self.wx[sn]
             A[sn]=np.linalg.inv(T)
-            B[sn]=(np.dot(self.alpha.T,self.wy[sn].dot(np.matrix(Y[sn]).T))+np.dot(self.wx[sn],np.matrix(self.x[sn,1:]).T)).T
+            B[sn]=(np.dot(self.A[:,1:].T,self.wy[sn].dot(np.matrix(Y[sn]).T))+np.dot(self.wx[sn],np.matrix(self.x[sn,1:]).T)).T
               
             H[sn]=(np.dot(A[sn],np.matrix(B[sn]).T)).T
               
@@ -393,43 +394,47 @@ class sugar_fitting:
         if self.fit_grey:
             print 'WARNING NOT IMPLEMENTED'
             # mean of grey = 0
-            mean_grey=copy.deepcopy(np.mean(self.h[:,1]))
-            self.h[:,1]-=mean_grey
-            self.A[:,0]+=mean_grey
-            chi2=self.chi2
+            mean_grey = copy.deepcopy(np.mean(self.h[:,1]))
+            self.h[:,1] -= mean_grey
+            self.A[:,0] += mean_grey
+            chi2 = self.chi2
             self.comp_chi2()
-            if abs(self.chi2-chi2)>1e-6:
-                print 'ANDALOUSE GREY'
+            if abs(self.chi2-chi2) > 1e-6:
+                print 'PROBLEME GREY mean'
                 print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
             # decorrelation grey xplus
-            if self.Color or self.intrinsic:
-                self.comp_chi2()
-                chi2=self.chi2
-                self.decorrelate_grey_h()
-                self.comp_chi2()
-                if abs(self.chi2-chi2)>1e-6:
-                    print 'ANDALOUSE'
-                    print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
+            
+            self.comp_chi2()
+            chi2 = self.chi2
+            self.decorrelate_grey_h()
+            self.comp_chi2()
+            if abs(self.chi2-chi2)>1e-6:
+                print 'PROBLEME GREY decorrelation'
+                print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
             
  
     def decorrelate_grey_h(self):
         print 'WARNING NOT IMPLEMENTED'
-        h=copy.deepcopy(self.xplus)
-        self.add_cst_Av=0
-        self.add_cst_xplus=np.zeros(len(self.xplus[0]))
-        self.cov_grey_xplus=np.zeros(len(self.xplus[0]))
-              
+        self.separate_component()
+        h = copy.deepcopy(self._h)
+        self.add_cst_xplus = np.zeros(len(self._h[0]))
+        self.cov_grey_xplus = np.zeros(len(self._h[0]))
               
         for ncomp in range(len(self.cov_grey_xplus)):
-            self.cov_grey_xplus[ncomp]=np.cov(self.delta_M_GREY,h[:,ncomp])[0,1]
+            self.cov_grey_xplus[ncomp] = np.cov(self.delta_m_grey,h[:,ncomp])[0,1]
 
-        add_cst=np.dot(np.linalg.inv(np.cov(h.T)),self.cov_grey_xplus)
-        self.add_cst_xplus=add_cst
+        add_cst = np.dot(np.linalg.inv(np.cov(h.T)),self.cov_grey_xplus)
+        self.add_cst_xplus = add_cst
+
+        for ncomp in range(len(self._h[0])):
+            self.delta_m_grey -= self._h[:,ncomp]*self.add_cst_xplus[ncomp]
+            self.A[:,1:][:,ncomp] += self.add_cst_xplus[ncomp]
+        self.merge_component()
 
     def m_step(self):
 
         if self.fit_grey:
-            Y = copy.deepcopy(self.y) - (self.h*np.ones(np.shape(self.y)).T).T
+            Y = copy.deepcopy(self.y) - (self.h[:,1]*np.ones(np.shape(self.y)).T).T
         else:
             Y = copy.deepcopy(self.y)
 
@@ -461,7 +466,20 @@ class sugar_fitting:
     
     def run_fit(self):
 
-        return 'to do'
+        self.chi2_save = []
+        self.comp_chi2()
+        self.chi2_save.append(self.chi2)
+        
+        for i in range(300):
+            self.e_step()
+            self.comp_chi2()
+            self.chi2_save.append(self.chi2)
+
+            self.m_step()
+            self.comp_chi2()
+            self.chi2_save.append(self.chi2)    
+            print i+1, self.chi2/self.dof
+        
 
     def separate_component(self):
 

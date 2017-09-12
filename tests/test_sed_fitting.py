@@ -90,21 +90,33 @@ def test_global_fit(plot=False):
     """
     test initialisation of sed_fitting
     """
-    nsn = 30
+    nsn = 20
     y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(nsn,plot=False)
     covy = np.zeros((nsn,len(wave),len(wave)))
     for i in range(nsn):
-        covy[i] = np.eye(len(wave))*y_err[i]
+        covy[i] = np.eye(len(wave))*y_err[i]**2
 
     sedfit = sugar.sugar_fitting(x, y, x_err, covy,
                                  wave, size_bloc=None,
                                  fit_grey=False)
     sedfit.init_fit()
-    sedfit.comp_chi2()
+    if plot:
+        import pylab as plt
+        plt.figure(figsize=(8,8))
+        for i in range(3):
+            plt.subplot(4,1,i+1)
+            plt.plot(wave,alpha_truth[i],'r',linewidth=5)
+            plt.plot(wave,sedfit.alpha[:,i],'b',linewidth=3)
+            plt.subplot(4,1,4)
+            plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
+            plt.plot(wave,sedfit.m0,'b',linewidth=3)
+    #sedfit.comp_chi2()
+    #sedfit.separate_component()
+    #sedfit.e_step()
+    #sedfit.m_step()
+    sedfit.run_fit()
     sedfit.separate_component()
-    sedfit.e_step()
-    sedfit.m_step()
-
+    
     if plot:
         import pylab as plt
         plt.figure(figsize=(8,8))
@@ -123,7 +135,7 @@ if __name__=='__main__':
 
     import pylab as plt
     #test_init(plot=True)
-    sed = test_global_fit(plot=False)
+    sed = test_global_fit(plot=True)
 
         
 
