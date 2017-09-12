@@ -90,7 +90,7 @@ def test_global_fit(plot=False):
     """
     test initialisation of sed_fitting
     """
-    nsn = 20
+    nsn = 105
     y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(nsn,plot=False)
     covy = np.zeros((nsn,len(wave),len(wave)))
     for i in range(nsn):
@@ -98,7 +98,7 @@ def test_global_fit(plot=False):
 
     sedfit = sugar.sugar_fitting(x, y, x_err, covy,
                                  wave, size_bloc=None,
-                                 fit_grey=False)
+                                 fit_grey=True)
     sedfit.init_fit()
     if plot:
         import pylab as plt

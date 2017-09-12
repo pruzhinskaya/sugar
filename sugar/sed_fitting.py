@@ -392,29 +392,27 @@ class sugar_fitting:
         self.h[:,1:]=H
 
         if self.fit_grey:
-            print 'WARNING NOT IMPLEMENTED'
             # mean of grey = 0
+            self.comp_chi2()
+            chi2 = self.chi2
             mean_grey = copy.deepcopy(np.mean(self.h[:,1]))
             self.h[:,1] -= mean_grey
             self.A[:,0] += mean_grey
-            chi2 = self.chi2
             self.comp_chi2()
             if abs(self.chi2-chi2) > 1e-6:
                 print 'PROBLEME GREY mean'
                 print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
-            # decorrelation grey xplus
-            
+                
+            #decorrelation grey xplus
             self.comp_chi2()
             chi2 = self.chi2
             self.decorrelate_grey_h()
             self.comp_chi2()
             if abs(self.chi2-chi2)>1e-6:
-                print 'PROBLEME GREY decorrelation'
                 print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
             
  
     def decorrelate_grey_h(self):
-        print 'WARNING NOT IMPLEMENTED'
         self.separate_component()
         h = copy.deepcopy(self._h)
         self.add_cst_xplus = np.zeros(len(self._h[0]))
@@ -428,7 +426,7 @@ class sugar_fitting:
 
         for ncomp in range(len(self._h[0])):
             self.delta_m_grey -= self._h[:,ncomp]*self.add_cst_xplus[ncomp]
-            self.A[:,1:][:,ncomp] += self.add_cst_xplus[ncomp]
+            self.alpha[:,ncomp] += self.add_cst_xplus[ncomp]
         self.merge_component()
 
     def m_step(self):
@@ -474,12 +472,15 @@ class sugar_fitting:
             self.e_step()
             self.comp_chi2()
             self.chi2_save.append(self.chi2)
+            if self.chi2_save[-1]-self.chi2_save[-2]>0:
+                print 'PROBLEM CHI2'
 
             self.m_step()
             self.comp_chi2()
             self.chi2_save.append(self.chi2)    
             print i+1, self.chi2/self.dof
-        
+            if self.chi2_save[-1]-self.chi2_save[-2]>0:
+                print 'PROBLEM CHI2'        
 
     def separate_component(self):
 
