@@ -1,8 +1,10 @@
 """test odr fitting."""
 
 import numpy as np
+import copy
 import os
 import sugar
+import time 
 
 
 def generate_fake_sed(NSN,plot=False):
@@ -26,11 +28,13 @@ def generate_fake_sed(NSN,plot=False):
     alpha[0] = 5. * np.sin(wavelength)
     alpha[1] = 0.1 * wavelength
     alpha[2] = 15. * np.exp(-0.5*((wavelength-50.)/5.)**2)
+    grey = np.zeros(NSN)
     
     for i in range(NSN):
         y[i] = x[i,0]*alpha[0] + x[i,1]*alpha[1] + x[i,2]*alpha[2]
         y_err[i] = np.random.normal(scale=np.std(y[i])*0.1,size=len(y[i]))
-        y[i] += y_err[i]
+        grey[i] = np.random.normal(scale=4.)
+        y[i] += y_err[i] + grey[i]
         x[i] += x_err_[i]
         x_err[i] = np.eye(3)*x_err_[i]**2
         y_err[i] = np.sqrt(y_err[i]**2)
@@ -44,7 +48,7 @@ def generate_fake_sed(NSN,plot=False):
         plt.subplot(2,1,2)
         plt.plot(wavelength,np.std(y,axis=0),'r',linewidth=3)
     
-    return y, y_err, x, x_err,wavelength,alpha
+    return y, y_err, x, x_err, wavelength, alpha, grey
 
 
 def test_init(plot=False):
@@ -52,7 +56,7 @@ def test_init(plot=False):
     test initialisation of sed_fitting
     """
     nsn = 1000
-    y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(nsn,plot=False)
+    y, y_err, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False)
 
     y_corrected = np.zeros_like(y)
     alpha = np.zeros_like(alpha_truth)
@@ -86,12 +90,12 @@ def test_init(plot=False):
         plt.plot(wave,m0,'b',linewidth=3)
 
 
-def test_global_fit(plot=False):
+def test_global_fit(plot=False,bloc=False):
     """
     test initialisation of sed_fitting
     """
-    nsn = 105
-    y, y_err, x, x_err, wave, alpha_truth = generate_fake_sed(nsn,plot=False)
+    nsn = 30
+    y, y_err, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False)
     covy = np.zeros((nsn,len(wave),len(wave)))
     for i in range(nsn):
         covy[i] = np.eye(len(wave))*y_err[i]**2
@@ -110,11 +114,30 @@ def test_global_fit(plot=False):
             plt.subplot(4,1,4)
             plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
             plt.plot(wave,sedfit.m0,'b',linewidth=3)
+    control = []
+    if bloc:
+        time_start = time.time()
+        for i in range(300):
+            sedfit.e_step() 
+            sedfit.compute_slopes_bloc_diagonal(size_bloc=10)
+            sedfit.comp_chi2()
+            control.append(sedfit.chi2)
+        time_end = time.time()
+        print 'time: ', time_end - time_start
+    else:
+        time_start = time.time()
+        for i in range(300):
+            sedfit.e_step() 
+            sedfit.m_step()
+            sedfit.comp_chi2()
+            control.append(sedfit.chi2)
+        time_end = time.time()
+        print 'time: ', time_end - time_start
     #sedfit.comp_chi2()
     #sedfit.separate_component()
     #sedfit.e_step()
     #sedfit.m_step()
-    sedfit.run_fit()
+    #sedfit.run_fit()
     sedfit.separate_component()
     
     if plot:
@@ -127,15 +150,19 @@ def test_global_fit(plot=False):
             plt.subplot(4,1,4)
             plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
             plt.plot(wave,sedfit.m0,'b',linewidth=3)
+        plt.figure()
+        plt.scatter(grey_truth,sedfit.delta_m_grey)
                                                                                                                                                 
-    return sedfit
+    return sedfit,control
         
         
 if __name__=='__main__':
 
     import pylab as plt
     #test_init(plot=True)
-    sed = test_global_fit(plot=True)
+    sed,control1 = test_global_fit(plot=False,bloc=False)
+    A = copy.deepcopy(sed.A)
+    sed,control2 = test_global_fit(plot=False,bloc=True)
 
         
 

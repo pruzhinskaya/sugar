@@ -280,11 +280,12 @@ class sugar_fitting:
 
     def __init__(self,x, y, covx, covy,
                  wavelength, size_bloc=None,
-                 fit_grey=False):
+                 fit_grey=False,sparse=False):
 
         self.fit_grey = fit_grey
         self.size_bloc = size_bloc
-                                     
+        self.sparse = sparse
+                                             
         self._x = x
         self._h = copy.deepcopy(self._x)
         self.y = y
@@ -461,6 +462,55 @@ class sugar_fitting:
         for i in range(self.nslopes):
             new_slopes[:,i] = self.A_vector[i*self.nbin:][:self.nbin]
         self.A[:,self.filter_grey] = new_slopes
+
+    def compute_slopes_bloc_diagonal(self,size_bloc=19):
+
+        if self.fit_grey:
+            Y = copy.deepcopy(self.y) - (self.h[:,1]*np.ones(np.shape(self.y)).T).T
+        else:
+            Y = copy.deepcopy(self.y)
+
+        self.A_vector = np.zeros(self.nslopes*self.nbin)
+
+        new_slopes = np.zeros(np.shape(self.A[:,self.filter_grey]))
+
+        h_ht_dict = {}
+        
+        for i in range(self.nbin/size_bloc):
+            for sn in range(self.nsn):
+                h_ht=np.dot(np.matrix(self.h[sn,self.filter_grey]).T,np.matrix(self.h[sn,self.filter_grey]))
+                
+                if self.sparse:
+                    W_sub=extract_block_diag(self.wy[sn],size_bloc,i)
+                else:
+                    W_sub = self.wy[sn][i*size_bloc:(i+1)*size_bloc, i*size_bloc:(i+1)*size_bloc]
+                
+                hh_kron_W_sub = linalg.kron(h_ht, W_sub)
+                WYh = np.dot(W_sub, np.dot(np.matrix(Y[sn,i*size_bloc:(i+1)*size_bloc]).T,
+                                           np.matrix(self.h[sn,self.filter_grey])))
+
+                if sn == 0:
+                    hh_kron_W_sum = np.copy(hh_kron_W_sub)
+                    WYh_sum = np.copy(WYh)
+                else:
+                    hh_kron_W_sum += hh_kron_W_sub
+                    WYh_sum += WYh
+
+            h_ht_dict[i] = [hh_kron_W_sum, WYh_sum]
+                    
+        for wl in h_ht_dict.keys():
+            hh_kron_W_sum, W_sum = h_ht_dict[wl]
+            sum_WYh_vector = np.zeros(size_bloc*self.nslopes)
+            for i in xrange(self.nslopes):   
+                sum_WYh_vector[i*size_bloc:][:size_bloc]=W_sum[:,i].ravel()
+
+            X_cho = linalg.cho_factor(hh_kron_W_sum)
+            slopes_solve = linalg.cho_solve(X_cho, sum_WYh_vector)
+            for i in xrange(self.nslopes):
+                new_slopes[wl*size_bloc:(wl+1)*size_bloc,i] = slopes_solve[i*size_bloc:(i+1)*size_bloc]
+            
+        self.A[:,self.filter_grey]=new_slopes
+
     
     def run_fit(self):
 
