@@ -2,10 +2,35 @@
 
 import numpy as np
 import scipy.odr as odrs
-from scipy import optimize, linalg
+from scipy.sparse import block_diag
+from scipy.sparse import coo_matrix
+from scipy import optimize, linalg, sparse
 import sugar
 import copy
 import os
+
+def extract_block_diag(A,size_bloc,number_bloc):
+
+    start = (size_bloc)*number_bloc
+    end = ((size_bloc)*number_bloc)+size_bloc
+
+    Non_zeros = np.array(sparse.extract.find(A))
+    Filtre = (Non_zeros[0]>=start)
+    Filtre = (Filtre & (Non_zeros[0]<end))
+
+    Non_zeros = Non_zeros[:,Filtre]
+
+    blocks = np.zeros((size_bloc,size_bloc))
+
+    T=0
+
+    for i in range(size_bloc):
+        for j in range(size_bloc):
+            if Non_zeros[1][T]==start+i and Non_zeros[0][T]==start+j:
+                blocks[i,j]=Non_zeros[2][T]
+                if T!=len(Non_zeros[2])-1:
+                    T+=1
+    return blocks
 
 
 class load_data_sed_fitting:
