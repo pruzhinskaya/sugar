@@ -11,6 +11,8 @@ Some description.
 #__all__ = [os.path.basename(m).replace('.py', '') for m in glob.glob("sugar/*.py")
 #           if '__init__' not in m]
 
+from . import multilinearfit
+
 from .load_data import load_data_sugar
 
 from .gaussian_process import load_data_bin_gp
@@ -22,6 +24,7 @@ from .math_toolbox import svd_inverse
 from .math_toolbox import cholesky_inverse
 
 from .cosmology import distance_modulus
+from .extinction import extinctionLaw
 
 from .emfa_analysis import run_emfa_analysis
 from .sed_fitting import multilinearfit

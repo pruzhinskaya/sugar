@@ -1,0 +1,129 @@
+"""compute the sugar model."""
+
+from scipy.sparse import block_diag
+from scipy.sparse import coo_matrix
+from sugar.multilinearfit import *
+import numpy as np
+import sugar
+import cPickle
+import copy
+import os
+
+class load_data_to_build_sugar:
+
+    def __init__(self, pca_pkl=None, dic_at_max=None, rep_gp=None, filtre=True):
+
+        assert pca_pkl is not None, 'I need a pkl file from emfa to start'
+        assert dic_at_max is not None, 'I need a pkl file from extinction fitting to start'
+        assert rep_gp is not None, 'I need a directory name from gaussian process to start'
+
+        dicpca = cPickle.load(open(pca_pkl))
+        pca_sn_name=np.array(dicpca['sn_name'])
+
+        if filtre:
+            FILTRE = dicpca['filter']
+        else:
+            FILTRE = np.array([True]*len(pca_sn_name))
+
+        self.pca_error = dicpca['error'][FILTRE]
+        self.pca_data = dicpca['data'][FILTRE]
+        self.pca_val = dicpca['val']
+        self.pca_vec = dicpca['vec']
+        self.pca_norm = dicpca['norm']
+        self.pca_Norm_data = dicpca['Norm_data'][FILTRE]
+        self.pca_Norm_err = dicpca['Norm_err'][FILTRE]
+        self.sn_name = pca_sn_name[FILTRE]
+
+        dic_model=cPickle.load(open(dic_at_max))
+        self.sn_name_Av = dic_model['sn_name']
+        self.Av = dic_model['Av_cardelli']
+        self.Rv = dic_model['RV']
+        
+        self.rep_GP = rep_gp
+
+        self.N_sn = len(self.sn_name)
+
+        self.number_bin_phase = 0
+        self.number_bin_wavelength = 0
+        A=np.loadtxt(self.rep_GP+self.sn_name[0]+'.predict')
+        phase = A[:,0]
+        wavelength = A[:,1]
+        self.TX = wavelength
+        for i in range(len(wavelength)):
+            if wavelength[i]==wavelength[0]:
+                self.number_bin_phase += 1
+
+        self.number_bin_wavelength = len(wavelength)/self.number_bin_phase
+
+    def compute_EM_PCA_data(self,number_eigenvector=3):
+
+        dat = self.pca_Norm_data
+        err = self.pca_Norm_err
+
+        new_base = sugar.passage(dat,err,self.pca_vec,sub_space=number_eigenvector)
+        cov_new_err = sugar.passage_error(err,self.pca_vec,number_eigenvector)
+
+        self.data = new_base
+        self.Cov_error = cov_new_err
+
+    def load_spectra_GP(self,sn_name):
+
+        A = np.loadtxt(self.rep_GP+sn_name+'.predict')
+        Y = A[:,2]
+
+        for j,sn_av in enumerate(self.sn_name_Av):
+            if sn_name == sn_av:
+                Y_cardelli_corrected = (Y-(self.Av[j]*sugar.extinctionLaw(A[:,1],Rv=self.Rv)))
+        return Y,Y_cardelli_corrected
+
+
+    def load_phase_wavelength(self,sn_name):
+        
+        A = np.loadtxt(self.rep_GP+sn_name+'.predict')
+        phase = A[:,0]
+        wavelength = A[:,1]
+        del A
+        
+        return phase,wavelength
+
+
+    def load_cov_matrix(self,sn_name):
+
+        A = np.loadtxt(self.rep_GP+sn_name+'.predict')
+        size_matrix = self.number_bin_phase*self.number_bin_wavelength
+        COV = np.zeros((size_matrix,size_matrix))
+
+        for i in range(self.number_bin_wavelength):
+            cov = A[(i*self.number_bin_phase):((i+1)*self.number_bin_phase),3:]
+            COV[i*self.number_bin_phase:(i+1)*self.number_bin_phase, i*self.number_bin_phase:(i+1)*self.number_bin_phase] = cov
+
+        return COV
+        
+    def load_spectra(self):
+
+        self.phase,self.X = self.load_phase_wavelength(self.sn_name[0])
+        self.Y_cardelli_corrected_cosmo_corrected = np.zeros((len(self.sn_name),len(self.X)))
+        self.Y_cosmo_corrected = np.zeros((len(self.sn_name),len(self.X)))
+        self.CovY = []
+        
+        for i,sn in enumerate(self.sn_name):
+            print sn
+            self.Y_cosmo_corrected[i], self.Y_cardelli_corrected_cosmo_corrected[i] = (self.load_spectra_GP(sn))
+
+            Cov = self.load_cov_matrix(sn)
+            COV = []
+            for i in range(self.number_bin_wavelength):
+                COV.append(coo_matrix(Cov[i*self.number_bin_phase:(i+1)*self.number_bin_phase, i*self.number_bin_phase:(i+1)*self.number_bin_phase]))
+            self.CovY.append(block_diag(COV))
+
+
+
+if __name__ == '__main__':
+
+    pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
+    gp = 'data_output/gaussian_process/gp_predict/'
+    max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
+
+    ld = load_data_to_build_sugar(pca_pkl=pca, dic_at_max=max_light, rep_gp=gp, filtre=True)
+    ld.compute_EM_PCA_data()
+    ld.load_spectra()
