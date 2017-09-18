@@ -305,7 +305,8 @@ class sugar_fitting:
 
     def __init__(self,x, y, covx, covy,
                  wavelength, size_bloc=None,
-                 fit_grey=False,sparse=False):
+                 fit_grey=False,sparse=False,
+                 control=False):
 
         self.fit_grey = fit_grey
         self.size_bloc = size_bloc
@@ -314,7 +315,8 @@ class sugar_fitting:
             assert self.size_bloc is not None, 'should provide a size of bloc'
         if self.size_bloc is not None:
             assert len(y[0])%self.size_bloc == 0, 'size_bloc should be able to divide len(y[0])'    
-                                             
+        self.control = control
+            
         self._x = x
         self._h = copy.deepcopy(self._x)
         self.y = y
@@ -429,23 +431,28 @@ class sugar_fitting:
 
         if self.fit_grey:
             # mean of grey = 0
-            self.comp_chi2()
-            chi2 = self.chi2
+            if self.control:
+                self.comp_chi2()
+                chi2 = self.chi2
+
             mean_grey = copy.deepcopy(np.mean(self.h[:,1]))
             self.h[:,1] -= mean_grey
             self.A[:,0] += mean_grey
-            self.comp_chi2()
-            if abs(self.chi2-chi2) > 1e-6:
-                print 'PROBLEME GREY mean'
-                print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
-                
+
+            if self.control:
+                self.comp_chi2()
+                if abs(self.chi2-chi2) > 1e-6:
+                    print 'PROBLEME GREY mean'
+                    print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
+                chi2 = self.chi2
+
             #decorrelation grey xplus
-            self.comp_chi2()
-            chi2 = self.chi2
             self.decorrelate_grey_h()
-            self.comp_chi2()
-            if abs(self.chi2-chi2)>1e-6:
-                print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
+
+            if self.control:
+                self.comp_chi2()
+                if abs(self.chi2-chi2)>1e-6:
+                    print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
             
  
     def decorrelate_grey_h(self):
@@ -563,18 +570,24 @@ class sugar_fitting:
         self.chi2_save.append(self.chi2)
         
         for i in range(300):
+
             self.e_step()
-            self.comp_chi2()
-            self.chi2_save.append(self.chi2)
-            if self.chi2_save[-1]-self.chi2_save[-2]>0:
-                print 'PROBLEM CHI2'
+
+            if self.control:
+                self.comp_chi2()
+                self.chi2_save.append(self.chi2)
+                if self.chi2_save[-1]-self.chi2_save[-2]>0:
+                    print 'PROBLEM CHI2'
 
             self.m_step()
+
             self.comp_chi2()
             self.chi2_save.append(self.chi2)    
             print i+1, self.chi2/self.dof
-            if self.chi2_save[-1]-self.chi2_save[-2]>0:
-                print 'PROBLEM CHI2'        
+            
+            if self.control:
+                if self.chi2_save[-1]-self.chi2_save[-2]>0:
+                    print 'PROBLEM CHI2'        
 
     def separate_component(self):
 

@@ -68,7 +68,7 @@ def test_init(plot=False):
     """
     test initialisation of sed_fitting
     """
-    nsn = 1000
+    nsn = 105
     y, y_err, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False)
 
     y_corrected = np.zeros_like(y)
@@ -107,34 +107,34 @@ def test_global_fit(plot=False,bloc=False, sparse=False):
     """
     test initialisation of sed_fitting
     """
-    nsn = 30
+    nsn = 105
     if not sparse:
         y, y_err, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False)
         covy = np.zeros((nsn,len(wave),len(wave)))
         for i in range(nsn):
             covy[i] = np.eye(len(wave))*y_err[i]**2
     else:
-        y, covy, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False,bloc=True)
+        y, covy, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False,bloc=True,size_bloc=19,nbin=190*19)
 
     if bloc:
         sedfit = sugar.sugar_fitting(x, y, x_err, covy,
-                                     wave, size_bloc=5,
+                                     wave, size_bloc=19,
                                      fit_grey=True,sparse=sparse)
     else:
         sedfit = sugar.sugar_fitting(x, y, x_err, covy,
                                      wave, size_bloc=None,
                                      fit_grey=True,sparse=sparse)
-    sedfit.init_fit()
-    if plot:
-        import pylab as plt
-        plt.figure(figsize=(8,8))
-        for i in range(3):
-            plt.subplot(4,1,i+1)
-            plt.plot(wave,alpha_truth[i],'r',linewidth=5)
-            plt.plot(wave,sedfit.alpha[:,i],'b',linewidth=3)
-            plt.subplot(4,1,4)
-            plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
-            plt.plot(wave,sedfit.m0,'b',linewidth=3)
+    #sedfit.init_fit()
+    #if plot:
+    #    import pylab as plt
+    #    plt.figure(figsize=(8,8))
+    #    for i in range(3):
+    #        plt.subplot(4,1,i+1)
+    #        plt.plot(wave,alpha_truth[i],'r',linewidth=5)
+    #        plt.plot(wave,sedfit.alpha[:,i],'b',linewidth=3)
+    #        plt.subplot(4,1,4)
+    #        plt.plot(wave,np.zeros_like(wave),'r',linewidth=5)
+    #        plt.plot(wave,sedfit.m0,'b',linewidth=3)
             
     sedfit.comp_chi2()
     sedfit.separate_component()
@@ -165,8 +165,8 @@ if __name__=='__main__':
     
     #import pylab as plt
     #test_init(plot=True)
-    sed = test_global_fit(plot=False,bloc=False,sparse=False)
-    sed2 = test_global_fit(plot=False,bloc=True,sparse=False)
+    #sed = test_global_fit(plot=False,bloc=False,sparse=False)
+    #sed2 = test_global_fit(plot=False,bloc=True,sparse=False)
     sed3 = test_global_fit(plot=False,bloc=True,sparse=True)
 
 

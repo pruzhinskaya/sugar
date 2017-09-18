@@ -1,4 +1,4 @@
-#from multiprocessing import Pool
+"""test multithread in python."""
 from multiprocessing.pool import ThreadPool as Pool
 import numpy as np
 import time
@@ -6,14 +6,12 @@ import time
 
 class comp_chi2:
 
-    def __init__(self):
+    def __init__(self,proc=20):
 
         self.chi2 = np.zeros(50)
         self.loop = np.linspace(0,49,50).astype(int)
-        self.pool = Pool(processes=20)
-        self.test1 = []
+        self.pool = Pool(processes=proc)
         self.test2 = []
-
 
     def comp_chi2(self):
         NN=3000
@@ -21,16 +19,7 @@ class comp_chi2:
             A = np.dot(np.ones(NN),np.dot(np.ones((NN,NN)),np.matrix(np.ones(NN)).T))
             self.chi2[integer] = A[0,0]
 
-
-        for j in range(100):
-            print j 
-            A = time.time()
-            for i in self.loop:
-                _comp_chi2(i)
-            B=time.time()
-            self.test1.append(B-A)
-            
-        for j in range(100):
+        for j in range(20):
             print j
             A = time.time()
             self.pool.map(_comp_chi2, self.loop)
@@ -47,8 +36,17 @@ if __name__ == '__main__':
 
     numbers = np.linspace(0,5,100) 
 
-    cc = comp_chi2()
+    test = []
+    cc = comp_chi2(proc = 10)
     cc.comp_chi2()
+    test.append(cc.test2)
 
-    #pool = Pool(processes=20)
+    cc = comp_chi2(proc = 20)
+    cc.comp_chi2()
+    test.append(cc.test2)
+
+    cc = comp_chi2(proc = 30)
+    cc.comp_chi2()
+    test.append(cc.test2)
+
 
