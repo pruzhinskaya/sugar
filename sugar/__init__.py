@@ -29,4 +29,5 @@ from .extinction import extinctionLaw
 from .emfa_analysis import run_emfa_analysis
 from .sed_fitting import multilinearfit
 from .sed_fitting import sugar_fitting
+from .make_sugar_sed import make_sugar
 

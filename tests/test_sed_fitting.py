@@ -114,7 +114,7 @@ def test_global_fit(plot=False,bloc=False, sparse=False):
         for i in range(nsn):
             covy[i] = np.eye(len(wave))*y_err[i]**2
     else:
-        y, covy, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False,bloc=True,size_bloc=19,nbin=190*19)
+        y, covy, x, x_err, wave, alpha_truth, grey_truth = generate_fake_sed(nsn,plot=False,bloc=True,size_bloc=19,nbin=10*19)
 
     if bloc:
         sedfit = sugar.sugar_fitting(x, y, x_err, covy,

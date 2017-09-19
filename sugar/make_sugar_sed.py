@@ -22,6 +22,9 @@ class load_data_to_build_sugar:
 
         if filtre:
             FILTRE = dicpca['filter']
+            #for i in range(len(pca_sn_name)):
+            #    if pca_sn_name[i] in ['SNF20080905-005','SNF20070403-000', 'SNF20080919-002']:
+            #        FILTRE[i] = False
         else:
             FILTRE = np.array([True]*len(pca_sn_name))
 
@@ -117,13 +120,39 @@ class load_data_to_build_sugar:
             self.CovY.append(block_diag(COV))
 
 
+class make_sugar(load_data_to_build_sugar):
+
+    def __init__(self, pca, dic_at_max, rep_gp, filtre=True):
+
+        load_data_to_build_sugar.__init__(self, pca_pkl=pca, dic_at_max=dic_at_max, rep_gp=rep_gp, filtre=filtre)
+        self.compute_EM_PCA_data()
+        self.load_spectra()
+
+    def launch_sed_fitting(self):
+
+        sedfit = sugar.sugar_fitting(self.data, self.Y_cardelli_corrected_cosmo_corrected,
+                                     self.Cov_error, self.CovY,self.X,
+                                     size_bloc=self.number_bin_phase,
+                                     fit_grey=True, sparse=True)
+
+        #del self.data
+        #del self.Y_cardelli_corrected_cosmo_corrected
+        #del self.Cov_error
+        del self.CovY
+
+        self.sedfit = sedfit        
+        self.sedfit.init_fit()
+        self.sedfit.run_fit()
+        self.sedfit.separate_component()
+        
+            
 
 if __name__ == '__main__':
 
     pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
     gp = 'data_output/gaussian_process/gp_predict/'
+    #gp_old = 'data_output/Prediction_GP_predict/'
     max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
 
-    ld = load_data_to_build_sugar(pca_pkl=pca, dic_at_max=max_light, rep_gp=gp, filtre=True)
-    ld.compute_EM_PCA_data()
-    ld.load_spectra()
+    ld = make_sugar(pca, max_light, gp, filtre=True)
+    #ld.launch_sed_fitting()

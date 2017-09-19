@@ -33,17 +33,6 @@ def extract_block_diag(A,size_bloc,number_bloc):
     return blocks
 
 
-class load_data_sed_fitting:
-    """
-    load data for estimating sugar sed.
-
-    TO DO
-    """
-
-    def __init__(self):
-
-        return None
-
 class multilinearfit:
     """
     n-dimentional linear fitting to init sed fitting.
@@ -555,8 +544,9 @@ class sugar_fitting:
             for i in xrange(self.nslopes):   
                 sum_WYh_vector[i*self.size_bloc:][:self.size_bloc]=W_sum[:,i].ravel()
 
-            X_cho = linalg.cho_factor(hh_kron_W_sum)
-            slopes_solve = linalg.cho_solve(X_cho, sum_WYh_vector)
+            #X_cho = linalg.cho_factor(hh_kron_W_sum)
+            #slopes_solve = linalg.cho_solve(X_cho, sum_WYh_vector)
+            slopes_solve = np.dot(np.linalg.inv(hh_kron_W_sum),sum_WYh_vector)
             for i in xrange(self.nslopes):
                 new_slopes[wl*self.size_bloc:(wl+1)*self.size_bloc,i] = slopes_solve[i*self.size_bloc:(i+1)*self.size_bloc]
             
