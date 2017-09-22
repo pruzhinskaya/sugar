@@ -330,6 +330,7 @@ class sugar_fitting:
         self.wx = np.zeros((self.nsn,self.ncomp,self.ncomp))
         self.dy = np.zeros((self.nsn,self.nbin))
         self.wy = []
+        self.wwy = []
 
         for sn in range(self.nsn):
             self.wx[:,(self.grey):,(self.grey):][sn] = np.linalg.inv(self.covx[sn])
@@ -339,10 +340,13 @@ class sugar_fitting:
             else:
                 self.dy[sn] = np.sqrt(covy[sn].diagonal())
                 w = []
+                ww = []
                 for i in range(self.nbin/self.size_bloc):
-                    w.append(coo_matrix(np.linalg.inv(extract_block_diag(covy[sn],self.size_bloc,i))))
+                    bloc_inv = np.linalg.inv(extract_block_diag(covy[sn],self.size_bloc,i))
+                    w.append(coo_matrix(bloc_inv))
+                    ww.append(bloc_inv)
                 self.wy.append(block_diag(w))
-                
+                self.wwy.append(ww)
 
         self.A = np.zeros((self.nbin,self.ncomp+1))
         self.h = copy.deepcopy(self.x)
@@ -469,7 +473,6 @@ class sugar_fitting:
         else:
             self._m_step_bloc_diagonal()
 
-
     def _m_step(self):
 
         if self.fit_grey:
@@ -502,7 +505,7 @@ class sugar_fitting:
         for i in range(self.nslopes):
             new_slopes[:,i] = self.A_vector[i*self.nbin:][:self.nbin]
         self.A[:,self.filter_grey] = new_slopes
-
+        
     def _m_step_bloc_diagonal(self):
 
         if self.fit_grey:
@@ -510,56 +513,47 @@ class sugar_fitting:
         else:
             Y = copy.deepcopy(self.y)
 
-        self.A_vector = np.zeros(self.nslopes*self.nbin)
-
         new_slopes = np.zeros(np.shape(self.A[:,self.filter_grey]))
 
         h_ht_dict = {}
-        
+
+        hh_kron_W_sum = np.zeros((self.nbin/self.size_bloc,self.size_bloc*self.nslopes,self.size_bloc*self.nslopes))
+        WYh_sum = np.zeros((self.nbin/self.size_bloc,self.size_bloc,self.nslopes))
+
         for i in range(self.nbin/self.size_bloc):
             for sn in range(self.nsn):
                 h_ht=np.dot(np.matrix(self.h[sn,self.filter_grey]).T,np.matrix(self.h[sn,self.filter_grey]))
                 
                 if self.sparse:
-                    W_sub=extract_block_diag(self.wy[sn],self.size_bloc,i)
+                    W_sub = self.wwy[sn][i]
                 else:
                     W_sub = self.wy[sn][i*self.size_bloc:(i+1)*self.size_bloc, i*self.size_bloc:(i+1)*self.size_bloc]
                 
-                hh_kron_W_sub = linalg.kron(h_ht, W_sub)
-                WYh = np.dot(W_sub, np.dot(np.matrix(Y[sn,i*self.size_bloc:(i+1)*self.size_bloc]).T,
-                                           np.matrix(self.h[sn,self.filter_grey])))
+                hh_kron_W_sum[i] += linalg.kron(h_ht, W_sub)
+                WYh_sum[i] += np.dot(W_sub, np.dot(np.matrix(Y[sn,i*self.size_bloc:(i+1)*self.size_bloc]).T,
+                                                   np.matrix(self.h[sn,self.filter_grey])))
 
-                if sn == 0:
-                    hh_kron_W_sum = np.copy(hh_kron_W_sub)
-                    WYh_sum = np.copy(WYh)
-                else:
-                    hh_kron_W_sum += hh_kron_W_sub
-                    WYh_sum += WYh
-
-            h_ht_dict[i] = [hh_kron_W_sum, WYh_sum]
-                    
-        for wl in h_ht_dict.keys():
-            hh_kron_W_sum, W_sum = h_ht_dict[wl]
             sum_WYh_vector = np.zeros(self.size_bloc*self.nslopes)
-            for i in xrange(self.nslopes):   
-                sum_WYh_vector[i*self.size_bloc:][:self.size_bloc]=W_sum[:,i].ravel()
+            for j in xrange(self.nslopes):   
+                sum_WYh_vector[j*self.size_bloc:][:self.size_bloc]=WYh_sum[i][:,j].ravel()
 
-            #X_cho = linalg.cho_factor(hh_kron_W_sum)
-            #slopes_solve = linalg.cho_solve(X_cho, sum_WYh_vector)
-            slopes_solve = np.dot(np.linalg.inv(hh_kron_W_sum),sum_WYh_vector)
-            for i in xrange(self.nslopes):
-                new_slopes[wl*self.size_bloc:(wl+1)*self.size_bloc,i] = slopes_solve[i*self.size_bloc:(i+1)*self.size_bloc]
-            
+            X_cho = linalg.cho_factor(hh_kron_W_sum[i])
+            slopes_solve = linalg.cho_solve(X_cho, sum_WYh_vector)
+            for j in xrange(self.nslopes):
+                new_slopes[i*self.size_bloc:(i+1)*self.size_bloc,j] = slopes_solve[j*self.size_bloc:(j+1)*self.size_bloc]
+                
         self.A[:,self.filter_grey]=new_slopes
 
     
-    def run_fit(self):
+    def run_fit(self, maxiter=10000):
 
         self.chi2_save = []
         self.comp_chi2()
+        self.chi2_save.append(self.chi2 + 1)
         self.chi2_save.append(self.chi2)
-        
-        for i in range(300):
+
+        i = 0
+        while self.chi2_save[-2]-self.chi2_save[-1]>1e-4:
 
             self.e_step()
 
@@ -577,7 +571,11 @@ class sugar_fitting:
             
             if self.control:
                 if self.chi2_save[-1]-self.chi2_save[-2]>0:
-                    print 'PROBLEM CHI2'        
+                    print 'PROBLEM CHI2'
+            i += 1
+            if i>maxiter:
+                break
+        
 
     def separate_component(self):
 

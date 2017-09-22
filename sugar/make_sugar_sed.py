@@ -138,12 +138,12 @@ class make_sugar(load_data_to_build_sugar):
         #del self.data
         #del self.Y_cardelli_corrected_cosmo_corrected
         #del self.Cov_error
-        del self.CovY
+        #del self.CovY
 
         self.sedfit = sedfit        
         self.sedfit.init_fit()
         self.sedfit.run_fit()
-        self.sedfit.separate_component()
+        #self.sedfit.separate_component()
         
             
 
@@ -152,7 +152,8 @@ if __name__ == '__main__':
     pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
     gp = 'data_output/gaussian_process/gp_predict/'
     #gp_old = 'data_output/Prediction_GP_predict/'
+    #gp_old = '../../Desktop/test_gp/gp_predict/'
     max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
 
     ld = make_sugar(pca, max_light, gp, filtre=True)
-    #ld.launch_sed_fitting()
+    ld.launch_sed_fitting()
