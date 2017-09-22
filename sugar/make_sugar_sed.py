@@ -135,25 +135,42 @@ class make_sugar(load_data_to_build_sugar):
                                      size_bloc=self.number_bin_phase,
                                      fit_grey=True, sparse=True)
 
-        #del self.data
-        #del self.Y_cardelli_corrected_cosmo_corrected
-        #del self.Cov_error
-        #del self.CovY
+        del self.data
+        del self.Y_cardelli_corrected_cosmo_corrected
+        del self.Cov_error
+        del self.CovY
 
         self.sedfit = sedfit        
         self.sedfit.init_fit()
         self.sedfit.run_fit()
-        #self.sedfit.separate_component()
+        self.sedfit.separate_component()
         
+    def write_model_output(self,pkl=None):
+
+        if pkl is None:
+            path = os.path.dirname(sugar.__file__)
+            pkl = path + '/data_output/sugar_model.pkl'
             
+
+        dic = {'alpha':self.sedfit.alpha,
+               'm0':self.sedfit.m0,
+               'delta_m_grey':self.sedfit.delta_m_grey,
+               'h':self.sedfit._h,
+               'sn_name':self.sn_name,
+               'chi2':self.sedfit.chi2_save,
+               'dof':self.sedfit.dof}
+        
+        fichier = open(pkl,'w')
+        cPickle.dump(dic, fichier)
+        fichier.close()
+        
 
 if __name__ == '__main__':
 
     pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
     gp = 'data_output/gaussian_process/gp_predict/'
-    #gp_old = 'data_output/Prediction_GP_predict/'
-    #gp_old = '../../Desktop/test_gp/gp_predict/'
     max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
 
     ld = make_sugar(pca, max_light, gp, filtre=True)
     ld.launch_sed_fitting()
+    ld.write_model_output()

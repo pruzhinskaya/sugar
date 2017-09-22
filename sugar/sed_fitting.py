@@ -219,36 +219,6 @@ class multilinearfit:
                         print 'error : calls limit are exceeded'
                         break
         
-        y_corrected=copy.deepcopy(self.y)
-        y_plus=copy.deepcopy(self.y)
-        y_error_corrected=np.zeros(len(self.y))      
-        
-        VARx=np.dot(self.X,self.X.T)/(len(self.y)-1)
-        
-        self.xplus=output.xplus.T
-
-        for sn in range(len(self.y)):
-            for correction in range(len(self.alpha)):
-                if len(self.alpha)==1:
-                    y_corrected[sn] -=  self.alpha*self.X.T[sn] 
-                    y_plus[sn] -= self.alpha*self.xplus[sn]
-                else:
-                    y_corrected[sn] -= self.alpha[correction]*self.X.T[sn][correction] 
-                    y_plus[sn] -= self.alpha[correction]*self.xplus[sn][correction]
-    
-                if self.covx is not None:
-                    for k in range(len(self.alpha)):
-                        if correction>k :
-                            continue
-                        else:
-                            y_error_corrected[sn] += self.alpha[correction]*self.alpha[k]*self.covx.T[sn,correction,k]
-    
-        self.y_plus=y_plus
-        self.y_corrected=y_corrected
-        self.y_error_corrected=y_error_corrected
-        self.alpha=self.alpha
-        self.M0=self.M0   
-        self.dM=np.sqrt(self.yerr**2+self.disp**2)
         self.output=output
 
     def _compute_dispertion(self):
@@ -388,9 +358,6 @@ class sugar_fitting:
         This is this chi2 which minimized
         in this chi2. 
         """
-        #residuy = self.y - np.dot(self.A,self.h.T).T
-        #residux = self.x[:,1:] - self.h[:,1:]
-        #self.chi2 = np.einsum("ij,ijk,ik->",residuy,self.wy,residuy) + np.einsum("ij,ijk,ik->",residux,self.wx,residux)
         chi2 = 0.
         for sn in range(self.nsn):
             residu1 = self.y[sn] - np.dot(self.A,np.matrix(self.h[sn]).T).T
@@ -403,7 +370,6 @@ class sugar_fitting:
         Compute the true value of the data,
         and the grey offset
         """
-
         A=np.zeros(np.shape(self.wx))
         B=np.zeros((self.nsn,self.ncomp))
         H=np.zeros((self.nsn,self.ncomp))
@@ -594,8 +560,3 @@ class sugar_fitting:
         self.h[:,1+self.grey:] = copy.deepcopy(self._h)
         if self.fit_grey:
             self.h[:,1] = copy.deepcopy(self.delta_m_grey)
-        
-
-if __name__=='__main__':
-
-    print 'to finish'
