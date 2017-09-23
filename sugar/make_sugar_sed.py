@@ -155,6 +155,7 @@ class make_sugar(load_data_to_build_sugar):
         dic = {'alpha':self.sedfit.alpha,
                'm0':self.sedfit.m0,
                'delta_m_grey':self.sedfit.delta_m_grey,
+               'X':self.X,
                'h':self.sedfit._h,
                'sn_name':self.sn_name,
                'chi2':self.sedfit.chi2_save,
