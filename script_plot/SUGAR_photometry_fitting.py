@@ -368,20 +368,20 @@ def plot_light_curve(SN,BVR_data,BVR_phase,BVR_model,BVR_model_phase,BVR_model_o
     
         COLOR=['b','g','r','purple','k']
         cst=[0,-1,-2,2,-3]
-        Label=['$B_{PFL}$','$V_{PFL} \ %i$'%(cst[1]),'$R_{PFL} \ %i$'%(cst[2])]
+        Label=['$B_{S}$','$V_{S} \ %i$'%(cst[1]),'$R_{S} \ %i$'%(cst[2])]
         P.figure(figsize=(12,16))
         gs = gridspec.GridSpec(6, 1,height_ratios=[6,1,1,1,1,1])
         P.subplots_adjust(left=0.07, right=0.99,bottom=0.05,top=0.97,hspace=0.001)
         P.subplot(gs[0])
         
-        P.scatter(BVR_phase,BVR_data[4]+cst[4],c=COLOR[4],s=30,label='$I_{PFL} \ %i$'%(cst[4]))
+        P.scatter(BVR_phase,BVR_data[4]+cst[4],c=COLOR[4],s=30,label='$I_{S} \ %i$'%(cst[4]))
         P.plot(BVR_model_phase,BVR_model[4]+cst[4],COLOR[4],linewidth=2)
         for i in range(3):
             #P.errorbar(BVR_phase,BVR_data[2-i]+cst[2-i],xerr=None,yerr=BVR_err[2-i],linestyle='',color=COLOR[2-i],marker='.',alpha=0.5,zorder=0)
             P.scatter(BVR_phase,BVR_data[2-i]+cst[2-i],c=COLOR[2-i],s=30,label=Label[2-i])
             P.plot(BVR_model_phase,BVR_model[2-i]+cst[2-i],COLOR[2-i],linewidth=2)
 
-        P.scatter(BVR_phase,BVR_data[3]+cst[3],c=COLOR[3],s=30,label='$U_{PFL}\ + %i$'%(cst[3]))
+        P.scatter(BVR_phase,BVR_data[3]+cst[3],c=COLOR[3],s=30,label='$U_{S}\ + %i$'%(cst[3]))
         P.plot(BVR_model_phase,BVR_model[3]+cst[3],COLOR[3],linewidth=2)
 
 
@@ -448,7 +448,7 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
     x2=N.array([0,X2,0,0])
     x3=N.array([0,0,X3,0])
     Av=N.array([0,0,0,AV])
-    Time=N.linspace(-12,42,30)
+    Time=N.linspace(-12,42,50)
     #Time=N.linspace(-12,42,19)
     
 
@@ -459,7 +459,7 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
     
     COLOR=['b','g','r','purple','k']
     cst=[0,-2.1,-4,+2.3,-6]
-    Label=['$B_{PFL} \ \pm 1 \sigma$','$V_{PFL} \ %i \ \pm 1 \sigma$'%(cst[1]),'$R_{PFL} \ %i \ \pm 1 \sigma$'%(cst[2]),'$U_{PFL} \ +%i \ \pm 1 \sigma$'%(cst[3]),'$I_{PFL} \ %i \ \pm 1 \sigma$'%(cst[4])]
+    Label=['$B_{S} \ \pm 1 \sigma$','$V_{S} \ %i \ \pm 1 \sigma$'%(cst[1]),'$R_{S} \ %i \ \pm 1 \sigma$'%(cst[2]),'$U_{S} \ +%i \ \pm 1 \sigma$'%(cst[3]),'$I_{S} \ %i \ \pm 1 \sigma$'%(cst[4])]
     TITLE=['q1','q2','q3','Av']
 
     for par in range(4):
@@ -470,8 +470,8 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
         BVR_sigma_moins=copy.deepcopy(SN_model.BVR)
 
         #P.figure(figsize=(12,18))
-        P.figure(figsize=(12,14))
-        P.subplots_adjust(left=0.05, right=0.99,bottom=0.05,top=0.97,wspace=0.15)
+        P.figure(figsize=(9,9))
+        P.subplots_adjust(left=0.08, right=0.99,bottom=0.07,top=0.97,wspace=0.25)
         P.subplot(1,2,1)
         i=3
         P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=0.5 )
@@ -484,12 +484,12 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
         P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=0.5 )
         P.plot(Time,MEAN[2-i]+cst[2-i],COLOR[2-i],linewidth=2,label=Label[2-i])
 
-        P.ylabel('BD17 mags')
+        P.ylabel('BD17 mag + Const.',fontsize=18)
         P.legend(loc=3)
         P.xlim(-14,44)
-        P.ylim(3.5,16.)
+        P.ylim(3.8,16.)
         P.gca().invert_yaxis()
-        P.xlabel('Time (days)')
+        P.xlabel('Time (days)',fontsize=18)
         P.title(TITLE[par]+' $\pm 1 \sigma$ light curves effect')
 
 
@@ -498,23 +498,24 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
         #P.subplots_adjust(left=0.07, right=0.97,bottom=0.05,top=0.97)
 
         #U-B
-        P.plot(Time,MEAN[3]-MEAN[0],'purple',linewidth=2,label='$U_{PFL}-B_{PFL}$')
+        P.plot(Time,MEAN[3]-MEAN[0],'purple',linewidth=2,label='$\left(U_{S}-B_{S}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[3]-BVR_sigma_moins[0],BVR_sigma_plus[3]-BVR_sigma_plus[0],color='purple',alpha=0.5 )
         #B-V
-        P.plot(Time,MEAN[0]-MEAN[1],'b',linewidth=2,label='$B_{PFL}-V_{PFL}$')
+        P.plot(Time,MEAN[0]-MEAN[1],'b',linewidth=2,label='$\left(B_{S}-V_{S}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[0]-BVR_sigma_moins[1],BVR_sigma_plus[0]-BVR_sigma_plus[1],color='b',alpha=0.5 )
         #V-I
-        P.plot(Time,MEAN[1]-MEAN[2],'g',linewidth=2,label='$V_{PFL}-R_{PFL}$')
+        P.plot(Time,MEAN[1]-MEAN[2],'g',linewidth=2,label='$\left(V_{S}-R_{S}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[1]-BVR_sigma_moins[2],BVR_sigma_plus[1]-BVR_sigma_plus[2],color='g',alpha=0.5 )
         #R-I
-        P.plot(Time,MEAN[2]-MEAN[4],'r',linewidth=2,label='$R_{PFL}-I_{PFL}$')
+        P.plot(Time,MEAN[2]-MEAN[4],'r',linewidth=2,label='$\left(R_{S}-I_{S}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[2]-BVR_sigma_moins[4],BVR_sigma_plus[2]-BVR_sigma_plus[4],color='r',alpha=0.5 )
 
-        P.ylabel('Color')
+        P.ylabel('Color (mag)',fontsize=18)
         P.legend(loc=4)
         P.xlim(-14,44)
+        P.ylim(-1.25,0.85)
         #P.ylim(3.5,16.)
-        P.xlabel('Time (days)')
+        P.xlabel('Time (days)',fontsize=18)
         P.title(TITLE[par]+' $\pm 1 \sigma$ colors effect')
 
         #P.savefig('../These_plot/plot_phd/Chapitre9/alpha%i_effect_LC.pdf'%(par+1))
@@ -596,6 +597,8 @@ if __name__=='__main__':
     #print x2
     #print x3
 
-    plot_qi_effectlight_curve('../sugar/data_output/SUGAR_model_v1.asci','../sugar/data_output/gaussian_process/gp_info.dat',X1=1.,X2=1.,X3=1.)    
+    dic = cPickle.load(open('../sugar/data_output/sugar_model.pkl'))
+    
+    plot_qi_effectlight_curve('../sugar/data_output/SUGAR_model_v1.asci','../sugar/data_output/gaussian_process/gp_info.dat',X1=N.std(dic['h'][:,0]),X2=N.std(dic['h'][:,1]),X3=N.std(dic['h'][:,2]))    
     
     #plot_filter_PF(WRITE=False)
