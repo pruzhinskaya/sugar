@@ -1,5 +1,6 @@
 import numpy as N
-import pylab as P 
+import pylab as P
+import cosmogp
 from matplotlib.patches import Rectangle
 from matplotlib.widgets import Slider, Button, RadioButtons
 import matplotlib.gridspec as gridspec
@@ -127,22 +128,20 @@ class build_SUGAR_ligh_curves:
         DELTA=len(self.Phase)
         self.Y_new_binning=N.zeros(190*len(self.Phase))
         for Bin in range(190):
-            #gp=GP.find_global_hyperparameters([self.Y[Bin*19:(Bin+1)*19]],
-            #                                  [N.ones(N.shape(self.Y[Bin*19:(Bin+1)*19]))],
-            #                                  [N.linspace(-12,42,19)],N.linspace(-12,42,19),
-            #                                  self.SUGAR_M0[Bin*19:(Bin+1)*19])
 
-            gp=GP.find_global_hyperparameters([self.Y[Bin*19:(Bin+1)*19]],
-                                              [N.ones(N.shape(self.Y[Bin*19:(Bin+1)*19]))],
-                                              [N.linspace(-12,42,19)],N.linspace(-12,42,19),
-                                              self.Y[Bin*19:(Bin+1)*19])
 
-            gp.hyperparameters.update({'sigma':self.hyper_sigma[Bin],
-                                      'l':self.hyper_l[Bin]})
+            #gp = cosmogp.gaussian_process(self.Y[Bin*19:(Bin+1)*19], N.linspace(-12,42,19), kernel='RBF1D',
+            #                              y_err=None, diff=None, Mean_Y=self.Y[Bin*19:(Bin+1)*19],
+            #                              Time_mean=N.linspace(-12,42,19), substract_mean=True)
 
-            gp.get_prediction(self.Phase,COV=False)
+            #gp.hyperparameters = [self.hyper_sigma[Bin],
+            #                      self.hyper_l[Bin]]
 
-            self.Y_new_binning[Bin*DELTA:(Bin+1)*DELTA]=gp.Prediction[0]
+            #gp.get_prediction(new_binning = self.Phase,COV=False)
+
+            self.Y_new_binning[Bin*DELTA:(Bin+1)*DELTA]=cosmogp.mean.interpolate_mean_1d(N.linspace(-12,42,19),
+                                                                                         self.Y[Bin*19:(Bin+1)*19],
+                                                                                         self.Phase)
             self.SUGAR_Wavelength[Bin*DELTA:(Bin+1)*DELTA]=copy.deepcopy(self.SUGAR_wavelength[Bin*19:(Bin+1)*19][0])
             self.wavelength[Bin]=self.SUGAR_wavelength[Bin*19:(Bin+1)*19][0]
 
@@ -182,13 +181,13 @@ class build_SUGAR_ligh_curves:
             self.BVR[2,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=R_SNf[0],lambda_max=R_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
             self.BVR[3,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=U_PFL[0],lambda_max=U_PFL[-1],var=None, step=None,Model=self.Model,AB=False)[0]
             self.BVR[4,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=I_PFL[0],lambda_max=I_PFL[-1],var=None, step=None,Model=self.Model,AB=False)[0]
-            self.B_band[time]=A.mag(self.wavelength,self.Flux[time*190:(time+1)*190], var=None, step=None, syst='STANDARD', filter='B')[0]
+            #self.B_band[time]=A.mag(self.wavelength,self.Flux[time*190:(time+1)*190], var=None, step=None, syst='STANDARD', filter='B')[0]
 
-            if self.Phase[time]==0:
-                if not BEST_PART:
-                    self.B_max=A.mag(self.wavelength,self.Flux[time*190:(time+1)*190], var=None, step=None, syst='STANDARD', filter='B')
-                else:
-                    self.B_max=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=6330,lambda_max=6600,var=None, step=None,Model=self.Model,AB=False)
+            #if self.Phase[time]==0:
+            #    if not BEST_PART:
+            #        self.B_max=A.mag(self.wavelength,self.Flux[time*190:(time+1)*190], var=None, step=None, syst='STANDARD', filter='B')
+            #    else:
+            #        self.B_max=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=6330,lambda_max=6600,var=None, step=None,Model=self.Model,AB=False)
                 #print self.B_max
 
 
@@ -518,7 +517,7 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
         P.xlabel('Time (days)')
         P.title(TITLE[par]+' $\pm 1 \sigma$ colors effect')
 
-        P.savefig('../These_plot/plot_phd/Chapitre9/alpha%i_effect_LC.pdf'%(par+1))
+        #P.savefig('../These_plot/plot_phd/Chapitre9/alpha%i_effect_LC.pdf'%(par+1))
 
 
 
@@ -597,6 +596,6 @@ if __name__=='__main__':
     #print x2
     #print x3
 
-    ##plot_qi_effectlight_curve('/sps/snovae/user/leget/CABALLO/SUGAR_validation/SUGAR_model_v1.asci','/sps/snovae/user/leget/CABALLO/Prediction_GP_binning_speed_without_MFR_issue/hyperparameters.dat',X1=x1,X2=x2,X3=x3)    
+    plot_qi_effectlight_curve('../sugar/data_output/SUGAR_model_v1.asci','../sugar/data_output/gaussian_process/gp_info.dat',X1=1.,X2=1.,X3=1.)    
     
-    plot_filter_PF(WRITE=False)
+    #plot_filter_PF(WRITE=False)
