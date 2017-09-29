@@ -15,8 +15,63 @@ from ToolBox import MPL
 from matplotlib.widgets import Slider, Button, RadioButtons
 import sys,os,optparse     
 from scipy.stats import norm as NORMAL_LAW
+import sugar
+
+def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl',
+                               SED_max='../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
+                               SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
+
+    dic = cPickle.load(open(emfa_pkl))
+
+    FILTRE=dic['filter']
+    data=sugar.passage(dic['Norm_data'][FILTRE],dic['Norm_err'][FILTRE],dic['vec'],sub_space=3)
+    error=sugar.passage_error(dic['Norm_err'][FILTRE],dic['vec'],3,return_std=True)
 
 
+    dic_SUGAR=cPickle.load(open(SUGAR_parameter_pkl))
+    dic_sed_max=cPickle.load(open(SED_max))
+    Av_max=dic_sed_max['Av_cardelli']
+
+    data_SUGAR=N.zeros(N.shape(data))
+    error_SUGAR=N.zeros(N.shape(error))
+    Av_SUGAR=N.zeros(len(Av_max))
+    sn_name=N.array(dic['sn_name'])[dic['filter']]
+
+
+    for i in range(len(sn_name)):
+        data_SUGAR[i,0]=dic_SUGAR[sn_name[i]]['q1']
+        data_SUGAR[i,1]=dic_SUGAR[sn_name[i]]['q2']
+        data_SUGAR[i,2]=dic_SUGAR[sn_name[i]]['q3']
+        Av_SUGAR[i]=dic_SUGAR[sn_name[i]]['Av']
+        error_SUGAR[i]=N.sqrt(N.diag(dic_SUGAR[sn_name[i]]['cov_q'][2:,2:]))
+
+    P.figure(figsize=(15,8))
+    P.subplots_adjust(left=0.05, bottom=0.10, right=0.99, top=0.98,wspace=0.2,hspace=0.4)
+    for i in range(3):
+        RHO=N.corrcoef(data[:,i],data_SUGAR[:,i])[0,1]
+        P.subplot(2,2,i+1)
+        P.scatter(data[:,i],data_SUGAR[:,i],label=r'$\rho=%.2f$'%(RHO),zorder=10)
+        P.errorbar(data[:,i],data_SUGAR[:,i], linestyle='', xerr=error[:,i],yerr=error_SUGAR[:,i],ecolor='grey',alpha=0.7,marker='.',zorder=0)
+        P.legend(loc=2)
+        P.xlabel('$q_{%i}$ from spectral indicators @ max'%(i+1),fontsize=20)
+        P.ylabel('$q_{%i}$ from SUGAR fitting'%(i+1),fontsize=20)
+        xlim = P.xlim()
+        P.plot(xlim,xlim,'r',linewidth=3,zorder=5)
+        P.ylim(xlim[0],xlim[1])
+        P.xlim(xlim[0],xlim[1])
+
+
+    RHO=N.corrcoef(Av_max,Av_SUGAR)[0,1]
+    P.subplot(2,2,4)
+    P.scatter(Av_max,Av_SUGAR,label=r'$\rho=%.2f$'%(RHO),zorder=10)
+    P.plot(Av_max,Av_max,'r',linewidth=3)
+    P.legend(loc=2)
+    P.xlabel('$A_{V}$ from fit SED @ max',fontsize=20)
+    P.ylabel('$A_{V}$ from SUGAR fitting',fontsize=20)
+    xlim = P.xlim()
+    P.plot(xlim,xlim,'r',linewidth=3,zorder=5)
+    P.ylim(xlim[0],xlim[1])
+    P.xlim(xlim[0],xlim[1])
 
 class SUGAR_plot:
 
@@ -86,8 +141,10 @@ class SUGAR_plot:
 
 if __name__=='__main__':
 
-    SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
-    SED.plot_spectrophtometric_effec_time(comp=0)
-    SED.plot_spectrophtometric_effec_time(comp=1)
-    SED.plot_spectrophtometric_effec_time(comp=2)
+    #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
+    #SED.plot_spectrophtometric_effec_time(comp=0)
+    #SED.plot_spectrophtometric_effec_time(comp=1)
+    #SED.plot_spectrophtometric_effec_time(comp=2)
 
+
+    Compare_TO_SUGAR_parameter()
