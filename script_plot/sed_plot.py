@@ -17,6 +17,8 @@ import sys,os,optparse
 from scipy.stats import norm as NORMAL_LAW
 import sugar
 
+
+
 def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl',
                                SED_max='../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
                                SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
@@ -139,6 +141,241 @@ class SUGAR_plot:
         ax2.set_ylim(ax2.get_ylim()[::-1])
 
 
+
+class residual_plot:
+
+    def __init__(self,DIC_spectra,SUGAR_model,Dic_sugar_parameter,dic_at_max,dic_salt=None):
+
+        self.dic=cPickle.load(open(DIC_spectra))
+        self.sn_name=self.dic.keys()
+        self.dicS=cPickle.load(open(Dic_sugar_parameter))
+        if dic_salt is not None :
+            self.dicSA=cPickle.load(open(dic_salt))
+        else:
+            self.dicSA=None
+        dic_at_max=cPickle.load(open(dic_at_max))
+	self.Rv=dic_at_max['RV']
+	SUGAR=N.loadtxt(SUGAR_model)
+	self.M0=SUGAR[:,2]
+	self.alpha=SUGAR[:,3:6]
+
+
+    def plot_spectra_reconstruct(self,sn,T_min=-12,T_max=42):
+        
+        fig,ax1=P.subplots(figsize=(10,8))
+        P.subplots_adjust(left=0.08, right=0.88,bottom=0.07,top=0.95)
+        IND=None
+        for i,SN in enumerate(self.sn_name):
+            if SN==sn:
+                IND=i
+
+        OFFSET=[]
+        Off=0
+        Phase=[]
+        Time=N.linspace(-12,42,19)
+        DAYS=[-999]
+        Y2_pos=[]
+        Y2_label=[]
+        for j in range(len(self.dic[sn].keys())):
+            days=self.dic[sn]['%i'%(j)]['phase_salt2']
+
+            if days>T_min and days<T_max:
+                DAYS.append(days)
+                if '%10.1f'%DAYS[-2]!='%10.1f'%DAYS[-1]:
+                    OFFSET.append(Off+0.2-N.mean(self.dic[sn]['0']['Y']))
+                    if Off==0:
+                        ax1.plot(self.dic[sn]['%i'%(j)]['X'],self.dic[sn]['%i'%(j)]['Y']+OFFSET[Off],'k',
+                                 label='Observed spectra')
+                        if self.dicSA:
+                            YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            ax1.plot(self.dic[sn]['%i'%(j)]['X'],YS+OFFSET[Off],'r',lw=2,label='SALT2.4')
+                    else:
+                        ax1.plot(self.dic[sn]['%i'%(j)]['X'],self.dic[sn]['%i'%(j)]['Y']+OFFSET[Off],'k')
+                        if self.dicSA:
+                            YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            ax1.plot(self.dicSA[sn]['%i'%(j)]['X'],YS+OFFSET[Off],'r',lw=2)
+
+                    moins=self.dic[sn]['%i'%(j)]['Y']+OFFSET[Off]-N.sqrt(self.dic[sn]['%i'%(j)]['V'])
+                    plus=self.dic[sn]['%i'%(j)]['Y']+OFFSET[Off]+N.sqrt(self.dic[sn]['%i'%(j)]['V'])
+                    ax1.fill_between(self.dic[sn]['%i'%(j)]['X'],moins,plus,color='k',alpha=0.5 )
+                    Y2_pos.append(self.dic[sn]['%i'%(j)]['Y'][-1]+OFFSET[Off])
+                    if abs(self.dic[sn]['%i'%(j)]['phase_salt2'])<2:
+                        Y2_label.append('%.1f day'%(self.dic[sn]['%i'%(j)]['phase_salt2']))
+                    else:
+                        Y2_label.append('%.1f days'%(self.dic[sn]['%i'%(j)]['phase_salt2']))
+                    
+                    Phase.append(self.dic[sn]['%i'%(j)]['phase_salt2'])
+                    Off+=1
+
+
+        Phase=N.array(Phase)
+    
+
+        Reconstruction=N.zeros((len(Phase),190))
+        for Bin in range(190):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+            Reconstruction[:,Bin]+=SPLINE_Mean(Phase)
+            for i in range(3):
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*19:(Bin+1)*19])
+            
+                Reconstruction[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
+
+            Reconstruction[:,Bin]+=self.dicS[sn]['grey']
+            Reconstruction[:,Bin]+=self.dicS[sn]['Av']*sugar.extinctionLaw(self.dic[sn]['0']['X'][Bin],
+                                                                           Rv=self.Rv)
+
+        MIN=10**25
+        MAX=-10**25
+
+        for j in range(len(Reconstruction[:,0])):
+            if j == 0:
+                ax1.plot(self.dic[sn]['%i'%(j)]['X'],Reconstruction[j]+OFFSET[j],'b',label='SUGAR model',lw=2)
+            else:
+                ax1.plot(self.dic[sn]['%i'%(j)]['X'],Reconstruction[j]+OFFSET[j],'b',lw=2)
+
+            if N.min(Reconstruction[j]+OFFSET[j])<MIN:
+                MIN=N.min(Reconstruction[j]+OFFSET[j])
+                
+            if N.max(Reconstruction[j]+OFFSET[j])>MAX:
+                MAX=N.max(Reconstruction[j]+OFFSET[j])
+
+        P.title(sn)
+        ax1.set_xlim(3300,8600)
+        ax1.set_ylim(MIN-0.5,MAX+3)
+        ax1.set_ylabel(r'Mag AB $(t,\lambda)$ +cst',fontsize=12)
+        ax1.set_xlabel('wavelength $[\AA]$',fontsize=12)
+        ax1.legend(loc=4)
+        P.gca().invert_yaxis()
+        
+        ax2=ax1.twinx()
+        ax2.set_ylim(MIN-0.5,MAX+3)
+        ax2.yaxis.set_ticks(Y2_pos)
+        ax2.yaxis.set_ticklabels(Y2_label)
+        ax2.set_ylim(ax2.get_ylim()[::-1])
+
+
+
+    def plot_spectra_reconstruct_residuals(self,sn,T_min=-12,T_max=42):
+
+        fig,ax1=P.subplots(figsize=(10,8))
+        P.subplots_adjust(left=0.08, right=0.88,bottom=0.07,top=0.95)
+
+        RESIDUAL_SUGAR=[]
+        RESIDUAL_SALT2=[]
+        ERROR_SPECTRA=[]
+
+        IND=None
+        for i,SN in enumerate(self.sn_name):
+            if SN==sn:
+                IND=i
+
+        OFFSET=[]
+        Off=0
+        Phase=[]
+        Time=N.linspace(-12,42,19)
+        DAYS=[-999]
+        JJ=[]
+        Y2_pos=[]
+        Y2_label=[]
+        for j in range(len(self.dic[sn].keys())):
+            days=self.dic[sn]['%i'%(j)]['phase_salt2']
+
+            if days>T_min and days<T_max:
+                DAYS.append(days)
+                if '%10.1f'%DAYS[-2]!='%10.1f'%DAYS[-1]:
+                    JJ.append(j)
+                    OFFSET.append(Off+0.2)
+                    if Off==0:
+                        ax1.plot(self.dic[sn]['%i'%(j)]['X'],N.zeros(len(self.dic[sn]['%i'%(j)]['X']))+OFFSET[Off],
+                                 'k',label='Observed spectra')
+                        if self.dicSA:
+                            YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            if not N.isfinite(N.sum(YS)):
+                                SPLINE=inter.InterpolatedUnivariateSpline(self.dicSA[sn]['%i'%(j)]['X'][N.isfinite(YS)],
+                                                                          YS[N.isfinite(YS)])
+                                YS[~N.isfinite(YS)]=SPLINE(self.dicSA[sn]['%i'%(j)]['X'][~N.isfinite(YS)])
+                            RESIDUAL_SALT2.append(self.dic[sn]['%i'%(j)]['Y']-YS)
+                            ax1.plot(self.dic[sn]['%i'%(j)]['X'],RESIDUAL_SALT2[Off]+OFFSET[Off],'r',lw=2,label='SALT2.4')
+                    else:
+                        ax1.plot(self.dic[sn]['%i'%(j)]['X'],N.zeros(len(self.dic[sn]['%i'%(j)]['X']))+OFFSET[Off],'k')
+                        if self.dicSA:
+
+
+                            
+                            YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            if not N.isfinite(N.sum(YS)):
+                                SPLINE=inter.InterpolatedUnivariateSpline(self.dicSA[sn]['%i'%(j)]['X'][N.isfinite(YS)],
+                                                                          YS[N.isfinite(YS)])
+                                YS[~N.isfinite(YS)]=SPLINE(self.dicSA[sn]['%i'%(j)]['X'][~N.isfinite(YS)])
+                            
+                            RESIDUAL_SALT2.append(self.dic[sn]['%i'%(j)]['Y']-YS)
+                            ax1.plot(self.dic[sn]['%i'%(j)]['X'],RESIDUAL_SALT2[Off]+OFFSET[Off],'r',lw=2)
+                            
+                    moins=OFFSET[Off]-N.sqrt(self.dic[sn]['%i'%(j)]['V'])
+                    plus=OFFSET[Off]+N.sqrt(self.dic[sn]['%i'%(j)]['V'])
+                    ax1.fill_between(self.dic[sn]['%i'%(j)]['X'],moins,plus,color='k',alpha=0.5 )
+                    Y2_pos.append(OFFSET[Off])
+                    if abs(self.dic[sn]['%i'%(j)]['phase_salt2'])<2:
+                        Y2_label.append('%.1f day'%(self.dic[sn]['%i'%(j)]['phase_salt2']))
+                    else:
+                        Y2_label.append('%.1f days'%(self.dic[sn]['%i'%(j)]['phase_salt2']))
+                    Phase.append(self.dic[sn]['%i'%(j)]['phase_salt2'])
+                    Off+=1
+                    
+
+                    ERROR_SPECTRA.append(N.sqrt(self.dic[sn]['%i'%(j)]['V']))
+
+        Phase=N.array(Phase)
+
+        Reconstruction=N.zeros((len(Phase),190))
+        for Bin in range(190):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+            Reconstruction[:,Bin]+=SPLINE_Mean(Phase)
+            for i in range(3):
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*19:(Bin+1)*19])
+                Reconstruction[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
+
+            Reconstruction[:,Bin]+=self.dicS[sn]['grey']
+            Reconstruction[:,Bin]+=self.dicS[sn]['Av']*sugar.extinctionLaw(self.dic[sn]['0']['X'][Bin],
+                                                                           Rv=self.Rv)
+        MIN=10**25
+        MAX=-10**25
+                
+        for j in range(len(Reconstruction[:,0])):
+            if j == 0:
+                ax1.plot(self.dic[sn]['%i'%(j)]['X'],
+                         Reconstruction[j]+OFFSET[j]-self.dic[sn]['%i'%(JJ[j])]['Y'],'b',label='SUGAR model',lw=2)
+            else:
+                ax1.plot(self.dic[sn]['%i'%(j)]['X'],
+                         Reconstruction[j]+OFFSET[j]-self.dic[sn]['%i'%(JJ[j])]['Y'],'b',lw=2)
+
+            RESIDUAL_SUGAR.append(Reconstruction[j]-self.dic[sn]['%i'%(JJ[j])]['Y'])
+                            
+        
+        MIN=N.min(OFFSET[0])
+        MAX=N.max(OFFSET[-1])
+
+        P.title(sn)
+        ax1.set_xlim(3300,8600)
+        ax1.set_ylim(MIN-2,MAX+3)
+        ax1.set_ylabel(r'Mag AB $(t,\lambda)$ + Cst.',fontsize=12)
+        ax1.set_xlabel('wavelength $[\AA]$',fontsize=12)
+        ax1.legend(loc=4)
+        P.gca().invert_yaxis()
+
+        ax2=ax1.twinx()
+        ax2.set_ylim(MIN-2,MAX+3)
+        ax2.yaxis.set_ticks(Y2_pos)
+        ax2.yaxis.set_ticklabels(Y2_label)
+        ax2.set_ylim(ax2.get_ylim()[::-1])
+
+        return RESIDUAL_SUGAR, RESIDUAL_SALT2, ERROR_SPECTRA
+
+
 if __name__=='__main__':
 
     #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
@@ -147,4 +384,12 @@ if __name__=='__main__':
     #SED.plot_spectrophtometric_effec_time(comp=2)
 
 
-    Compare_TO_SUGAR_parameter()
+    #Compare_TO_SUGAR_parameter()
+
+    rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
+                       '../sugar/data_output/SUGAR_model_v1.asci',
+                       '../sugar/data_output/sugar_parameters.pkl',
+                       '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
+                       dic_salt='../sugar/data_input/File_for_PF.pkl')
+    
+    rp.plot_spectra_reconstruct('PTF09dnl')
