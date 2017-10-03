@@ -188,13 +188,13 @@ class residual_plot:
                                  label='Observed spectra')
                         if self.dicSA:
                             YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
-                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
                             ax1.plot(self.dic[sn]['%i'%(j)]['X'],YS+OFFSET[Off],'r',lw=2,label='SALT2.4')
                     else:
                         ax1.plot(self.dic[sn]['%i'%(j)]['X'],self.dic[sn]['%i'%(j)]['Y']+OFFSET[Off],'k')
                         if self.dicSA:
                             YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
-                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
                             ax1.plot(self.dicSA[sn]['%i'%(j)]['X'],YS+OFFSET[Off],'r',lw=2)
 
                     moins=self.dic[sn]['%i'%(j)]['Y']+OFFSET[Off]-N.sqrt(self.dic[sn]['%i'%(j)]['V'])
@@ -292,7 +292,7 @@ class residual_plot:
                                  'k',label='Observed spectra')
                         if self.dicSA:
                             YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
-                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
                             if not N.isfinite(N.sum(YS)):
                                 SPLINE=inter.InterpolatedUnivariateSpline(self.dicSA[sn]['%i'%(j)]['X'][N.isfinite(YS)],
                                                                           YS[N.isfinite(YS)])
@@ -306,7 +306,7 @@ class residual_plot:
 
                             
                             YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
-                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_cmb'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+                            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
                             if not N.isfinite(N.sum(YS)):
                                 SPLINE=inter.InterpolatedUnivariateSpline(self.dicSA[sn]['%i'%(j)]['X'][N.isfinite(YS)],
                                                                           YS[N.isfinite(YS)])
@@ -386,10 +386,51 @@ if __name__=='__main__':
 
     #Compare_TO_SUGAR_parameter()
 
+    dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
+    
     rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
                        '../sugar/data_output/SUGAR_model_v1.asci',
                        '../sugar/data_output/sugar_parameters.pkl',
                        '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
-                       dic_salt='../sugar/data_input/File_for_PF.pkl')
+                       dic_salt = '../sugar/data_input/file_pf_bis.pkl')
+
+    residual_sel = []
+    residual_sucre = []
+    nspectra = 0
+
+    i=0
+    for sn in dic.keys():
+        print sn 
+        #rp.plot_spectra_reconstruct(sn)
+        #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
+        sucre, sel, residual_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=30)
+        residual_sel.append(sel)
+        residual_sucre.append(sucre)
+        nspectra += len(N.array(residual_sucre[i])[:,0])
+        i+=1
+        #P.savefig('plot_paper/reconstruct/'+sn+'_residual.pdf')
+    P.close('all')
+
+    res_sel = N.zeros((nspectra,190))
+    res_sucre = N.zeros((nspectra,190))
+
+    t = 0
+    for i in range(len(dic.keys())):
+        for j in range(len(residual_sel[i])):
+            res_sucre[t] = residual_sucre[i][j]
+            res_sel[t] = residual_sel[i][j]
+            t+=1
+
+    dic = cPickle.load(open('../sugar/data_input/spectra_snia.pkl'))
+    wave = dic['PTF09dnl']['0']['X']
+            
+    P.plot(wave,N.std(res_sel,axis=0),'r',linewidth=3,label='SALT2.4')
+    P.plot(wave,N.std(res_sucre,axis=0),'b',linewidth=3,label='SUGAR')            
+    P.xlabel('wavelength $[\AA]$',fontsize=20)
+    P.ylabel('STD (mag)',fontsize=20)
+    P.ylim(0,0.5)
+    P.xlim(3300,8700)
+    P.legend(loc=3)
+    P.show()
     
-    rp.plot_spectra_reconstruct('PTF09dnl')
+                                    
