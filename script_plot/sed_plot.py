@@ -75,6 +75,196 @@ def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output
     P.ylim(xlim[0],xlim[1])
     P.xlim(xlim[0],xlim[1])
 
+
+def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
+
+    lds = sugar.load_data_sugar()
+    lds.load_salt2_data()
+
+    Filtre = N.array([True]*len(lds.X0)) 
+    
+    x0 = lds.X0
+    x0_err = lds.X0_err
+    x1 = lds.X1
+    x1_err = lds.X1_err
+    c = lds.C
+    c_err = lds.C_err
+    grey = N.zeros_like(x0)
+    q1 = N.zeros_like(x0)
+    q2 = N.zeros_like(x0)
+    q3 = N.zeros_like(x0)
+    av = N.zeros_like(x0)
+
+    mu = N.zeros_like(x0)
+
+    dico = cPickle.load(open(SUGAR_parameter_pkl))
+    
+    for i in range(len(lds.sn_name)):
+        sn = lds.sn_name[i]
+        if sn in dico.keys():
+            grey[i] = dico[sn]['grey']
+            q1[i] = dico[sn]['q1']
+            q2[i] = dico[sn]['q2']
+            q3[i] = dico[sn]['q3']
+            av[i] = dico[sn]['Av']
+            mu[i] = 5. * N.log10(sugar.cosmology.luminosity_distance(lds.zhelio[i],lds.zcmb[i])) - 5.
+        else:
+            Filtre[i] = False
+    x0 = -2.5 * N.log10(x0[Filtre]) - mu[Filtre]
+    x0 -= N.mean(x0)
+    x0_err = -2.5 * N.log10(x0_err[Filtre])
+    x1_err = x1_err[Filtre]
+    c_err = c_err[Filtre]
+    x1 = x1[Filtre]
+    c = c[Filtre]
+    grey = grey[Filtre]
+    q1 = q1[Filtre]
+    q2 = q2[Filtre]
+    q3 = q3[Filtre]
+    av = av[Filtre]
+
+    param_salt = [c,x1,x0]
+    param_salt_err = [c_err,x1_err,x0_err]
+    param_salt_name = ['$C$','$X_1$','$-2.5 \log_{10}(X_0) - \mu + Cst.$']
+    param_sugar = [grey,q1,q2,q3,av]
+    param_sugar_name = ['$\Delta M_{grey}$','$q_1$','$q_2$','$q_3$','$A_V$']
+    
+    ind_salt = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2]
+    ind_sugar = [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4]
+
+    sticks_salt = [N.linspace(-0.1,0.4,6),N.linspace(-2,2,5),N.linspace(-0.5,1.5,5)]
+    sticks_sugar = [N.linspace(-0.4,0.2,4),N.linspace(-3,3,7),N.linspace(-4,4,5),N.linspace(-2,2,5),N.linspace(-0.5,1,4)]
+
+    fig = P.figure(figsize=(14,8))
+    P.subplots_adjust(left=0.06,top=0.97,right=0.91,wspace=0.,hspace=0.)
+    cmap = P.cm.get_cmap('Blues',6)
+    cmap.set_over('r')
+    bounds = [0, 1, 2, 3, 4, 5]
+    import matplotlib
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+    
+    for i in range(15):
+        P.subplot(3,5,i+1)
+        rho = N.corrcoef(param_sugar[ind_sugar[i]],param_salt[ind_salt[i]])[0,1]
+        signi = Statistics.correlation_significance(abs(rho),len(param_sugar[ind_sugar[i]]),sigma=True)
+
+        scat = P.scatter(param_sugar[ind_sugar[i]],param_salt[ind_salt[i]],s=50,cmap=cmap,
+                         c=N.ones_like(param_sugar[ind_sugar[i]])*signi,vmin = 0, vmax = 6)
+        
+        if i+1 not in [1,6,11]:
+            P.yticks(sticks_salt[ind_salt[i]],['']*len(sticks_salt[ind_salt[i]]))
+        else:
+            P.yticks(sticks_salt[ind_salt[i]])
+            if i+1 ==11:
+                P.ylabel(param_salt_name[ind_salt[i]],fontsize=16)
+            else:
+                P.ylabel(param_salt_name[ind_salt[i]],fontsize=20)
+
+        if i+1 not in [11,12,13,14,15]:
+            P.xticks(sticks_sugar[ind_sugar[i]],['']*len(sticks_sugar[ind_sugar[i]]))
+        else:
+            P.xticks(sticks_sugar[ind_sugar[i]])
+            P.xlabel(param_sugar_name[ind_sugar[i]],fontsize=20)
+
+    cbar_ax = fig.add_axes([0.93, 0.1, 0.02, 0.87])
+    cb = matplotlib.colorbar.ColorbarBase(cbar_ax, cmap=cmap,
+                                          norm=norm,
+                                          boundaries=bounds+[9],
+                                          extend='max',
+                                          ticks=bounds,
+                                          spacing='proportional')
+                                            
+    cb.set_label('Pearson correlation coefficient significance ($\sigma$)',fontsize=20)
+
+
+def plot_corr_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
+
+    dico = cPickle.load(open(SUGAR_parameter_pkl))
+
+    x0 = len(dico.keys())
+    sn_name = dico.keys()
+    
+    grey = N.zeros(x0)
+    q1 = N.zeros(x0)
+    q2 = N.zeros(x0)
+    q3 = N.zeros(x0)
+    av = N.zeros(x0)
+    
+    for i in range(len(sn_name)):
+        sn = sn_name[i]
+        grey[i] = dico[sn]['grey']
+        q1[i] = dico[sn]['q1']
+        q2[i] = dico[sn]['q2']
+        q3[i] = dico[sn]['q3']
+        av[i] = dico[sn]['Av']
+
+    x_param = [grey,q1,q2,q3,av]
+    y_param = [av,q3,q2,q1]
+
+    x_ind = [0,1,2,3,4,
+             0,1,2,3,4,
+             0,1,2,3,4,
+             0,1,2,3,4,
+             0,1,2,3,4]
+    
+    y_ind =[None,None,None,None,None,
+            3,3,3,3,3,
+            2,2,2,2,2,
+            1,1,1,1,1,
+            0,0,0,0,0]
+    
+    x_name = ['$\Delta M_{grey}$','$q_1$','$q_2$','$q_3$','$A_V$']
+    y_name = ['$A_V$','$q_3$','$q_2$','$q_1$']
+
+    fig = P.figure(figsize=(10,10))
+    P.subplots_adjust(left=0.08,hspace=0.,wspace=0.)
+    cmap = P.cm.get_cmap('Blues',6)
+    cmap.set_over('r')
+    bounds = [0, 1, 2, 3, 4, 5]
+    import matplotlib
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+
+    for i in range(25):
+        if i+1 in [2,3,4,5,8,9,10,14,15,20]:
+            continue
+        else:
+            P.subplot(5,5,i+1)
+            if i+1 in [1,7,13,19,25]:
+                P.yticks([],[])
+                P.hist(x_param[x_ind[i]])
+                if i+1!=25:
+                    P.xticks([],[])
+            else:
+                rho = N.corrcoef(x_param[x_ind[i]],y_param[y_ind[i]])[0,1]
+                signi = Statistics.correlation_significance(abs(rho),len(y_param[y_ind[i]]),sigma=True)
+                P.scatter(x_param[x_ind[i]],y_param[y_ind[i]],s=50,cmap=cmap,
+                          c=N.ones_like(y_param[y_ind[i]])*signi,vmin = 0, vmax = 6)
+                print x_name[x_ind[i]] + ' ' + y_name[y_ind[i]], ' ', signi, ' ',rho 
+
+            if i+1 not in [21,22,23,24,25]:
+                P.xticks([],[])
+            else:
+                P.xlabel(x_name[x_ind[i]],fontsize=24)
+
+            if i+1 not in [1,6,11,16,21]:
+                P.yticks([],[])
+            else:
+                if i+1 !=1 :
+                    P.ylabel(y_name[y_ind[i]],fontsize=24)
+
+    cbar_ax = fig.add_axes([0.93, 0.1, 0.02, 0.87])
+    cb = matplotlib.colorbar.ColorbarBase(cbar_ax, cmap=cmap,
+                                          norm=norm,
+                                          boundaries=bounds+[9],
+                                          extend='max',
+                                          ticks=bounds,
+                                          spacing='proportional')
+
+    cb.set_label('Pearson correlation coefficient significance ($\sigma$)',fontsize=20)
+                
+
+                    
 class SUGAR_plot:
 
     def __init__(self,dico_hubble_fit):
@@ -489,6 +679,10 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
 if __name__=='__main__':
 
 
+    #compare_sel_sucre()
+
+    plot_corr_sucre()
+    
     #wRMS_sed_sugar_salt()
     
     #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
@@ -499,19 +693,18 @@ if __name__=='__main__':
 
     #Compare_TO_SUGAR_parameter()
 
-    dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
+    #dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
-    rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
-                       '../sugar/data_output/SUGAR_model_v1.asci',
-                       '../sugar/data_output/sugar_parameters.pkl',
-                       '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
-                       dic_salt = '../sugar/data_input/file_pf_bis.pkl')
+    #rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
+    #                   '../sugar/data_output/SUGAR_model_v1.asci',
+    #                   '../sugar/data_output/sugar_parameters.pkl',
+    #                   '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
+    #                   dic_salt = '../sugar/data_input/file_pf_bis.pkl')
 
 
-
-    sn = 'PTF09dnl'
+    #sn = 'PTF09dnl'
     
-    rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
-    P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
-    sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
-    P.savefig('plot_paper/reconstruct/'+sn+'_residual.pdf')
+    #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
+    #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
+    #sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
+    #P.savefig('plot_paper/reconstruct/'+sn+'_residual.pdf')
