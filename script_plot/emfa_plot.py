@@ -42,7 +42,38 @@ class emfa_plot:
         self.si_norm_err = dic_emfa['Norm_err'][dic_emfa['filter']]
         self.sn_name = dic_emfa['sn_name']
         self.filtre = dic_emfa['filter']
+        self.si = dic_emfa['data'][dic_emfa['filter']]
+        self.si_err = dic_emfa['error'][dic_emfa['filter']]
 
+
+    def no_linear(self):
+
+        from mpl_toolkits.mplot3d import Axes3D
+                
+        sil = ['pEWCa II H&K', r'pEWSi II $\lambda$4131', 'pEWMg II',
+               'pEWFe $\lambda$4800', 'pEWS II W', 'pEWSi II $\lambda$5972',
+               'pEWSi II $\lambda$6355', 'pEWO I $\lambda$7773', 'pEWCa II IR',
+               'VSi II $\lambda$4131','VWS II $\lambda$5454','VWS II $\lambda$5640',
+               'VSi II $\lambda$6355']
+
+        data = self.si_norm
+        err = self.si_norm_err
+
+        new_base = sugar.passage(data,err,self.vec,sub_space=3)
+                                 
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        plt.subplots_adjust(bottom=0.01,top=0.99,left=0.01,right=1.01)
+        scat = ax.scatter(self.si[:,1],self.si[:,5],self.si[:,6],s=50,c=new_base[:,0],vmin=-3.5,vmax=3.5,cmap=plt.cm.jet)
+        ax.set_xlabel(sil[1] + ' ($\AA$)',fontsize=15)
+        ax.set_xlim(0,40)
+        ax.set_ylabel(sil[5] + ' ($\AA$)',fontsize=15)
+        ax.set_ylim(0,50)
+        ax.set_zlabel(sil[6] + ' ($\AA$)',fontsize=15)
+        ax.set_zlim(35,140)
+        cb = fig.colorbar(scat)
+        cb.set_label('SUGAR $q_1$',fontsize=20)
 
     def plot_eigenvalues(self,noise=False):
         """
@@ -349,6 +380,7 @@ class emfa_plot:
 if __name__=='__main__':
 
     faplot = emfa_plot()
-    faplot.plot_eigenvalues(noise=True)
+    faplot.no_linear()
+    #faplot.plot_eigenvalues(noise=True)
     #faplot.plot_pf_corr_factor_si(split=5)
     #faplot.plot_pf_corr_factor_salt2(split=5)
