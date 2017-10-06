@@ -175,7 +175,7 @@ class load_data_sugar:
             self.zerr.append(meta[self.sn_name[i]]['host.zhelio.err'])
             self.mb_err.append(meta[self.sn_name[i]]['salt2.RestFrameMag_0_B.err'])
             self.X0_err.append(meta[self.sn_name[i]]['salt2.X0.err'])
-            self.X1_err.append(meta[self.sn_name[i]]['salt2.X1'])
+            self.X1_err.append(meta[self.sn_name[i]]['salt2.X1.err'])
             self.C_err.append(meta[self.sn_name[i]]['salt2.Color.err'])
             self.C_mb_cov.append(meta[self.sn_name[i]]['salt2.CovColorRestFrameMag_0_B'])
             self.X1_C_cov.append(meta[self.sn_name[i]]['salt2.CovColorX1'])

@@ -107,7 +107,7 @@ class Hubble_diagram:
         self.VAR=N.zeros(len(self.Y))
         A=N.array([1.,Alpha,Beta])
         for sn in range(len(self.Y)):
-            numerateur=self.Y[sn]-MB+Alpha*self.data[sn,0]-Beta*self.data[sn,1]-distance_modulus(self.zhelio[sn],self.zcmb[sn])
+            numerateur= (self.Y[sn] - MB + Alpha*self.data[sn,0] - Beta*self.data[sn,1]) - distance_modulus(self.zhelio[sn],self.zcmb[sn])
             denominateur=(A.dot(N.dot(self.data_cov[sn],A.reshape(1,len(A)).T)))+self.disp_intrinseque**2+self.dmz[sn]**2
             chi2[sn]=numerateur**2/denominateur
             self.residu[sn]=numerateur
@@ -124,7 +124,7 @@ class Hubble_diagram:
 
             return self.chi2
 
-        Find_param=minuit.Minuit(_compute_chi2, alpha=-0.15,beta=2.9,mb=0.)
+        Find_param=minuit.Minuit(_compute_chi2, alpha=-0.15,beta=2.9,mb=-19.1)
             
         Find_param.migrad()
         self.Params=Find_param.values
@@ -156,7 +156,7 @@ class Hubble_diagram:
             
     def _compute_dispertion(self):
         self.disp=copy.deepcopy(self.disp_intrinseque)
-        self.disp=optimize.fsolve(self._disp_function,self.disp)[0]
+        self.disp=optimize.fmin(self._disp_function,self.disp)[0]
              
     def _disp_function(self,d):
         self.disp_intrinseque=d
@@ -171,13 +171,18 @@ class Hubble_diagram:
 
 class hubble_salt2(Hubble_diagram):
 
-    def __init__(self,Filtre=None):
+    def __init__(self,sn_name = None):
 
         lds = sugar.load_data_sugar()
         lds.load_salt2_data()
 
-        if Filtre is None:
+        if sn_name is None:
             Filtre = N.array([True]*len(lds.sn_name))
+        else:
+            Filtre = N.array([True]*len(lds.sn_name))
+            for sn in range(len(lds.sn_name)):
+                if lds.sn_name[sn] not in sn_name:
+                    Filtre[sn] = False
         
         cov = N.zeros((N.sum(Filtre),3,3))
         data = N.zeros((N.sum(Filtre),2))
@@ -195,8 +200,21 @@ class hubble_salt2(Hubble_diagram):
         
 if __name__=="__main__":
 
-    hs = hubble_salt2()
+    dic = cPickle.load(open('data_output/emfa_3_sigma_clipping.pkl'))
+    sn_name = N.array(dic['sn_name'])[dic['filter']]
 
+    hs = hubble_salt2(sn_name=sn_name)
+    dic = cPickle.load(open('data_output/sugar_parameters.pkl'))
+    grey = N.array([dic[sn]['grey'] for sn in dic.keys()])
+
+    binning = N.linspace(-0.55,0.40,10)
+    
+    P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
+    P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR $\Delta M_{Grey}$ (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
+    P.ylim(0,50)
+    P.ylabel('# of SNIa',fontsize=20)
+    P.xlabel('residuals (mag)',fontsize=20)
+    P.legend()
     
 
 
