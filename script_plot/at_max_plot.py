@@ -585,97 +585,138 @@ def plot_extinction_law_alpha1(dico_max):
     P.legend()
     P.xlabel('wavelength [$\AA$]')
 
-def plot_disp_eig(LIST_dic):
+def plot_disp_eig(LIST_dic,dic=None):
 
     COLOR=['r','k','c','b','g','y']
 
-    STD=[]
-    color_law=[]
-    X=[]
-    for i in range(len(LIST_dic)):
-        SP=SUGAR_plot(LIST_dic[i])
-        SP.plot_spectrum_corrected()
-        P.close()
-        if i==0:
-            STD.append(N.std(SP.Mag_no_corrected,axis=0))
-            X.append(SP.X) 
-        STD.append(N.std(SP.MAG_CORRECTED,axis=0))
-        color_law.append(SP.slope)
-    P.figure(figsize=(20,20))
+    if dic is None:
+    
+        STD=[]
+        color_law=[]
+        X=[]
+
+        for i in range(len(LIST_dic)):
+            SP=SUGAR_plot(LIST_dic[i])
+            SP.plot_spectrum_corrected()
+            P.close()
+            if i==0:
+                STD.append(N.std(SP.Mag_no_corrected,axis=0))
+                X.append(SP.X) 
+            STD.append(N.std(SP.MAG_CORRECTED,axis=0))
+            color_law.append(SP.slope)
+
+        dic = {'STD':STD,
+               'color_law':color_law,
+               'X':X}
+        File = open('disp_eig.pkl','w')
+        cPickle.dump(dic,File)
+        File.close()
+        
+    else:
+        dico = cPickle.load(open(dic))
+        STD = dico['STD']
+        color_law = dico['color_law']
+        X = dico['X']
+        
+    P.figure(figsize=(10,8))
     P.subplot(2,1,1)
-    P.subplots_adjust(left=0.05, bottom=0.07, right=0.99, top=0.99,hspace=0.001)
+    P.subplots_adjust(left=0.09, bottom=0.1, right=0.73, top=0.99,hspace=0.001)
     P.xlabel('wavelength [$\AA$]',fontsize=20)
-    P.legend()
 
     for i in range(len(LIST_dic)+1):
         if i==0:
             LABEL='No correction'
         else:
             if i==1:
-                LABEL='%i factor and extinction corrected'%(i)
+                LABEL=r'%i factor + $\gamma(\lambda)$'%(i)
             else:
-                LABEL='%i factors and extinction corrected'%(i)
+                LABEL=r'%i factors + $\gamma(\lambda)$'%(i)
 
         P.plot(X[0],STD[i],COLOR[i],label=LABEL,linewidth=3)
 
-    P.ylabel('RMS (mag)',fontsize=20)
+    P.ylabel('RMS (mag)',fontsize=25)
 
     P.ylim(0,0.65)
     P.xticks([3100,8800],['',''])
     P.xlim(3200,8700)
-    P.legend()
+    P.legend(bbox_to_anchor=(1.01, 0.35), loc=2, borderaxespad=0.,fontsize=16)
+        
     P.subplot(2,1,2)
     for i in range(len(LIST_dic)):
-        if i==0:
-            LABEL='$\gamma_{\lambda}$ (with %i factor)'%(i+1)
-        else:
-            LABEL='$\gamma_{\lambda}$ (with %i factors)'%(i+1)
-        P.plot(X[0],color_law[i],COLOR[i+1],linewidth=3,label=LABEL)
+        #if i==0:
+        #    LABEL='$\gamma_{\lambda}$ (with %i factor)'%(i+1)
+        #else:
+        #    LABEL='$\gamma_{\lambda}$ (with %i factors)'%(i+1)
+        P.plot(X[0],color_law[i],COLOR[i+1],linewidth=3)#,label=LABEL)
 
-    P.ylabel(r'$\gamma(\lambda)$',fontsize=20)
+    P.ylabel(r'$\gamma(\lambda)$',fontsize=25)
     P.xticks([4000,5000,6000,7000,8000],['4000','5000','6000','7000','8000'])
     P.xlim(3200,8700)
-    P.xlabel('wavelength [$\AA$]',fontsize=20)
-    P.ylim(0,2.2)
-    P.legend()
+    P.xlabel('wavelength [$\AA$]',fontsize=25)
+    P.ylim(0.4,2.1)
+    #P.legend()
 
 
-def plot_vec_emfa(LIST_dic,vec,ALIGN=[1,1,1,1,1]):
+def plot_vec_emfa(LIST_dic,vec,ALIGN=[1,1,1,1,1],dic=None):
 
     COLOR=['k','c','b','g','y']
 
-    STD=[]
-    X=[]
-    for i in range(len(LIST_dic)):
-        SP=SUGAR_plot(LIST_dic[i])
-        SP.plot_spectrum_corrected()
-        P.close()
-        if i==0:
-            X.append(SP.X)
-        STD.append([])
-        for j in range(vec+1):
-            STD[i].append(SP.dico['Lambda'][:,j]/(N.sqrt(N.sum(SP.dico['Lambda'][:,j]**2))))
+    if dic is None:
+        STD=[]
+        X=[]
+        for i in range(len(LIST_dic)):
+            SP=SUGAR_plot(LIST_dic[i])
+            SP.plot_spectrum_corrected()
+            P.close()
+            if i==0:
+                X.append(SP.X)
+            STD.append([])
+            for j in range(vec+1):
+                STD[i].append(SP.dico['Lambda'][:,j]/(N.sqrt(N.sum(SP.dico['Lambda'][:,j]**2))))
+        dic = {'STD': STD,
+               'X': X}
+        File = open('vec_emfa_residual.pkl','w')
+        cPickle.dump(dic,File)
+        File.close()
+    else:
+        dico = cPickle.load(open(dic))
+        STD = dico['STD']
+        X = dico['X']
 
-    P.figure(figsize=(20,15))
-    P.subplots_adjust(left=0.05, bottom=0.07, right=0.99, top=0.99)
+    P.figure(figsize=(10,8))
+    P.subplots_adjust(left=0.09, bottom=0.09, right=0.99, top=0.99, hspace=0., wspace=0.)
 
     for j in range(vec+1):
         P.subplot(3,2,j+1)
         for i in range(len(LIST_dic)):
             if i==0:
-                LABEL='Vectors on residuals (%i factor corrected and extinction corrected)'%(i+1)
+                LABEL=r'%i factor + $\gamma(\lambda)$'%(i+1)
             else:
-                LABEL='Vectors on residuals (%i factors corrected and extinction corrected)'%(i+1)
+                LABEL=r'%i factors + $\gamma(\lambda)$'%(i+1)
             
             P.plot(X[0],ALIGN[i]*STD[i][j],COLOR[i],label=LABEL,linewidth=3)
 
-        P.ylabel('$\Lambda_{%i}$'%(j+1),fontsize=20)
-        P.xticks([4000,5000,6000,7000,8000],['4000','5000','6000','7000','8000'])
-        P.xlabel('wavelength [$\AA$]',fontsize=20)
-    #P.ylim(0,0.65)
 
+
+        if j+1 in [1,3,5]:
+            P.yticks([-0.3,-0.2,-0.1,0.,0.1,0.2,0.3],['-0.3','-0.2','-0.1','0.','0.1','0.2','0.3'])
+        else:
+            P.yticks([-0.3,-0.2,-0.1,0.,0.1,0.2,0.3],['','','','','','',''])
+
+        if j+1 == 3:
+            P.ylabel('EM-FA vectors on residuals (mag)', fontsize=20)
+            
+        P.text(8000,0.3,'$\Lambda_{%i}$'%(j+1),fontsize=20)
+            
+        P.ylim(-0.4,0.4)
+
+        if j+1 in [4,5]:
+            P.xticks([4000,5000,6000,7000,8000],['4000','5000','6000','7000','8000'])
+            P.xlabel('wavelength [$\AA$]',fontsize=20)
+        else:
+            P.xticks([4000,5000,6000,7000,8000],['','','','',''])
         P.xlim(3200,8700)
-    P.legend(bbox_to_anchor = (2.2, 0.7))
+    P.legend(bbox_to_anchor = (1.75, 0.7))
 
 
 ######################################################################################################################
@@ -699,12 +740,12 @@ if __name__=='__main__':
     lst_dic=[]
     for i in range(5):
         #lst_dic.append(path+'/data_output/SUGAR_model_for_phd/model_at_max_%i_eigenvector_without_grey_without_MFR_problem.pkl'%(i+1))
-        lst_dic.append('../../Desktop/sugar_paper_output/model_at_max_%i_eigenvector_without_grey_with_sigma_clipping.pkl'%(i+1))
+        lst_dic.append('../sugar/data_output/sugar_paper_output/model_at_max_%i_eigenvector_without_grey_with_sigma_clipping.pkl'%(i+1))
     
-    plot_disp_eig(lst_dic)
-    P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
-    plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])
-    P.savefig('plot_paper/STD_choice_eigenvector.pdf')
+    #plot_disp_eig(lst_dic,dic = 'disp_eig.pkl')
+    #P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
+    plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1],dic='vec_emfa_residual.pkl')
+    #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
     #SP=SUGAR_plot('../../Desktop/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')
     #SP.plot_bin_Av_slope(42)
