@@ -47,16 +47,16 @@ def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output
         Av_SUGAR[i]=dic_SUGAR[sn_name[i]]['Av']
         error_SUGAR[i]=N.sqrt(N.diag(dic_SUGAR[sn_name[i]]['cov_q'][2:,2:]))
 
-    P.figure(figsize=(15,8))
-    P.subplots_adjust(left=0.05, bottom=0.10, right=0.99, top=0.98,wspace=0.2,hspace=0.4)
+    P.figure(figsize=(6,12))
+    P.subplots_adjust(left=0.15, bottom=0.05, right=0.99, top=0.98, wspace=0.2, hspace=0.35)
     for i in range(3):
         RHO=N.corrcoef(data[:,i],data_SUGAR[:,i])[0,1]
-        P.subplot(2,2,i+1)
+        P.subplot(4,1,i+1)
         P.scatter(data[:,i],data_SUGAR[:,i],label=r'$\rho=%.2f$'%(RHO),zorder=10)
         P.errorbar(data[:,i],data_SUGAR[:,i], linestyle='', xerr=error[:,i],yerr=error_SUGAR[:,i],ecolor='grey',alpha=0.7,marker='.',zorder=0)
         P.legend(loc=2)
-        P.xlabel('$q_{%i}$ from spectral indicators @ max'%(i+1),fontsize=20)
-        P.ylabel('$q_{%i}$ from SUGAR fitting'%(i+1),fontsize=20)
+        P.xlabel('$q_{%i}$ from spectral indicators @ max'%(i+1),fontsize=15)
+        P.ylabel('$q_{%i}$ from SUGAR fitting'%(i+1),fontsize=15)
         xlim = P.xlim()
         P.plot(xlim,xlim,'r',linewidth=3,zorder=5)
         P.ylim(xlim[0],xlim[1])
@@ -64,19 +64,19 @@ def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output
 
 
     RHO=N.corrcoef(Av_max,Av_SUGAR)[0,1]
-    P.subplot(2,2,4)
+    P.subplot(4,1,4)
     P.scatter(Av_max,Av_SUGAR,label=r'$\rho=%.2f$'%(RHO),zorder=10)
     P.plot(Av_max,Av_max,'r',linewidth=3)
     P.legend(loc=2)
-    P.xlabel('$A_{V}$ from fit SED @ max',fontsize=20)
-    P.ylabel('$A_{V}$ from SUGAR fitting',fontsize=20)
+    P.xlabel('$A_{V}$ from fit SED @ max',fontsize=15)
+    P.ylabel('$A_{V}$ from SUGAR fitting',fontsize=15)
     xlim = P.xlim()
     P.plot(xlim,xlim,'r',linewidth=3,zorder=5)
     P.ylim(xlim[0],xlim[1])
     P.xlim(xlim[0],xlim[1])
 
 
-def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
+def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl',plot_slopes=False):
 
     lds = sugar.load_data_sugar()
     lds.load_salt2_data()
@@ -123,11 +123,25 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
     q3 = q3[Filtre]
     av = av[Filtre]
 
+    param_lin_fit = N.array([grey,q1,q2,q3,av]).T
+    ml_x1 = sugar.multilinearfit(param_lin_fit,x1,xerr=None,yerr=None,covx=None,Beta00=None)
+    ml_c = sugar.multilinearfit(param_lin_fit,c,xerr=None,yerr=None,covx=None,Beta00=None)
+    ml_x0 = sugar.multilinearfit(param_lin_fit,x0,xerr=None,yerr=None,covx=None,Beta00=None)
+
+    ml_x1.Multilinearfit(adddisp=True)
+    ml_c.Multilinearfit(adddisp=True)
+    ml_x0.Multilinearfit(adddisp=True)
+
     param_salt = [c,x1,x0]
     param_salt_err = [c_err,x1_err,x0_err]
     param_salt_name = ['$C$','$X_1$','$-2.5 \log_{10}(X_0) - \mu + Cst.$']
     param_sugar = [grey,q1,q2,q3,av]
     param_sugar_name = ['$\Delta M_{grey}$','$q_1$','$q_2$','$q_3$','$A_V$']
+
+    param_slopes = [ml_c,ml_x1,ml_x0]
+    x_axis_slopes = [N.linspace(N.min(grey),N.max(grey),10),N.linspace(N.min(q1),N.max(q1),10),
+                     N.linspace(N.min(q2),N.max(q2),10),N.linspace(N.min(q3),N.max(q3),10),
+                     N.linspace(N.min(av),N.max(av),10)]
     
     ind_salt = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2]
     ind_sugar = [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4]
@@ -165,6 +179,9 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
         else:
             P.xticks(sticks_sugar[ind_sugar[i]])
             P.xlabel(param_sugar_name[ind_sugar[i]],fontsize=20)
+        if plot_slopes:
+            P.plot(x_axis_slopes[ind_sugar[i]],x_axis_slopes[ind_sugar[i]]*param_slopes[ind_salt[i]].alpha[ind_sugar[i]]+param_slopes[ind_salt[i]].M0)
+                
 
     cbar_ax = fig.add_axes([0.93, 0.1, 0.02, 0.87])
     cb = matplotlib.colorbar.ColorbarBase(cbar_ax, cmap=cmap,
@@ -175,6 +192,7 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
                                           spacing='proportional')
                                             
     cb.set_label('Pearson correlation coefficient significance ($\sigma$)',fontsize=20)
+
 
 
 def plot_corr_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
@@ -285,8 +303,8 @@ class SUGAR_plot:
         ALPHA=self.alpha[:,comp][reorder]
      
         CST=N.mean(M0)
-        fig,ax1=P.subplots(figsize=(7,8))
-        P.subplots_adjust(left=0.1, right=0.85,bottom=0.1,top=0.99)
+        fig,ax1=P.subplots(figsize=(10,12))
+        P.subplots_adjust(left=0.1, right=0.9,bottom=0.07,top=0.99)
         Time=N.linspace(-12,42,19)
         Y2_label=[]
         Y2_pos=[]
@@ -679,9 +697,9 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
 if __name__=='__main__':
 
 
-    #compare_sel_sucre()
+    #compare_sel_sucre(plot_slopes=True)
 
-    plot_corr_sucre()
+    #plot_corr_sucre()
     
     #wRMS_sed_sugar_salt()
     
@@ -691,7 +709,7 @@ if __name__=='__main__':
     #SED.plot_spectrophtometric_effec_time(comp=2)
 
 
-    #Compare_TO_SUGAR_parameter()
+    Compare_TO_SUGAR_parameter()
 
     #dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     

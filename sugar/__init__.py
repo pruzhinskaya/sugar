@@ -31,3 +31,5 @@ from .sed_fitting import multilinearfit
 from .sed_fitting import sugar_fitting
 from .make_sugar_sed import make_sugar
 
+from .build_sugar import build_model
+

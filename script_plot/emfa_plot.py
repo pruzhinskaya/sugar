@@ -167,7 +167,7 @@ class emfa_plot:
         rotation=45
         xstart, xplus, ystart = 0.03, 0.0777 ,1.01
  
-        cmap.set_over('c')
+        cmap.set_over('r')
         bounds = [0, 1, 2, 3, 4, 5]
         norm = plt.matplotlib.colors.BoundaryNorm(bounds, cmap.N)
                 
@@ -311,7 +311,7 @@ class emfa_plot:
         #plt.subplots_adjust(top=0.5,bottom=0.2,left=0.1,right=1.1,hspace=0.0)
         xstart, xplus, ystart = 0.1, 0.37 ,1.01
  
-        cmap.set_over('c')
+        cmap.set_over('r')
         bounds = [0, 1, 2, 3, 4, 5]
         norm = plt.matplotlib.colors.BoundaryNorm(bounds, cmap.N)
                 
@@ -389,4 +389,4 @@ if __name__=='__main__':
     #faplot.no_linear()
     #faplot.plot_eigenvalues(noise=True)
     faplot.plot_pf_corr_factor_si(split=5)
-    #faplot.plot_pf_corr_factor_salt2(split=5)
+    faplot.plot_pf_corr_factor_salt2(split=5)

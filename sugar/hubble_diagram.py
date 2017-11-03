@@ -208,15 +208,30 @@ if __name__=="__main__":
     grey = N.array([dic[sn]['grey'] for sn in dic.keys()])
 
     binning = N.linspace(-0.55,0.40,10)
-    
-    P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
-    P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR $\Delta M_{Grey}$ (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
-    P.ylim(0,50)
-    P.ylabel('# of SNIa',fontsize=20)
-    P.xlabel('residuals (mag)',fontsize=20)
-    P.legend()
-    
 
+    #plt.figure()
+    #P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
+    #P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR $\Delta M_{Grey}$ (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
+    #P.ylim(0,50)
+    #P.ylabel('# of SNIa',fontsize=20)
+    #P.xlabel('residuals (mag)',fontsize=20)
+    #P.legend()
+
+    dico = cPickle.load(open('../../sngc/sngc/residal_for_maria.pkl'))
+    sn_lssfr = dico['sn_name']
+    lssfr = dico['LsSFR']
+
+    Filtre = N.array([True]*len(dic.keys()))
+    SN = dic.keys()
+    host = N.array([N.nan]*len(SN))
+    for i in range(len(Filtre)):
+        for j in range(len(lssfr)):
+            if SN[i] == sn_lssfr[j]:
+                host[i] = lssfr[j]
+            
+        
+
+    
 
     
 

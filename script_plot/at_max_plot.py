@@ -140,35 +140,43 @@ class SUGAR_plot:
                 Mag_all_sn[:,Bin]-=(N.dot(self.alpha[Bin],self.data.T))+self.trans
         
         self.MAG_CORRECTED= Mag_all_sn
+
+        indice = N.linspace(0,len(self.Av)-1,len(self.Av)).astype(int)
+        Av, indice = zip(*sorted(zip(self.Av, indice)))
+        colors = P.cm.coolwarm(self.Av)
+        
         P.figure(figsize=(12,12))
         P.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.995,hspace=0.001)
+        
         for sn in range(len(self.sn_name)):
             P.subplot(2,1,1)
             if No_corrected:
                 if sn==0:
-                    P.plot(self.X,self.Mag_no_corrected[sn]+16.2,'r',linewidth=3,alpha=0.5,label='Observed spectra')
+                    P.plot(self.X,self.Mag_no_corrected[sn]+16.7,color=colors[sn],linewidth=3,zorder=self.Av[sn])
                 else:
-                    P.plot(self.X,self.Mag_no_corrected[sn]+16.2,'r',linewidth=3,alpha=0.5)
+                    P.plot(self.X,self.Mag_no_corrected[sn]+16.7,color=colors[sn],linewidth=3,zorder=self.Av[sn])
 
             if sn==0:
-                P.plot(self.X,Mag_all_sn[sn]+20.5,'b',linewidth=3,alpha=0.5,label='Corrected spectra ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)')
+                P.plot(self.X,Mag_all_sn[sn]+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
             else:
-                P.plot(self.X,Mag_all_sn[sn]+20.5,'b',linewidth=3,alpha=0.5)
+                P.plot(self.X,Mag_all_sn[sn]+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
 
+        P.text(6500,-3.7,'Observed spectra',fontsize=20)
+        P.text(6000,2.5,'Corrected spectra ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)',fontsize=20)
 
         P.ylabel('Mag AB + cst',fontsize=20)
         P.ylim(-5,7)
         P.xticks([2500.,9500.],['toto','pouet'])
         P.xlim(self.X[0]-60,self.X[-1]+60)
-        P.legend(loc=4)
+        #P.legend(loc=4)
         P.gca().invert_yaxis()
         STD=N.std(Mag_all_sn,axis=0)
         STD_no_correct=N.std(self.Mag_no_corrected,axis=0)
         P.subplot(2,1,2)
         if No_corrected:
-            P.plot(self.X,STD_no_correct,'r',linewidth=3,label=r'Observed RMS average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD_no_correct[self.floor_filter])))
+            P.plot(self.X,STD_no_correct,'r',linewidth=3,label=r'Observed RMS, average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD_no_correct[self.floor_filter])))
 
-        P.plot(self.X,STD,'b',linewidth=3,label=r'Corrected RMS average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD[self.floor_filter])))
+        P.plot(self.X,STD,'b',linewidth=3,label=r'Corrected RMS, average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD[self.floor_filter])))
 
         P.plot(self.X,N.zeros(len(self.X)),'k')
         P.ylabel('RMS (mag)',fontsize=20)
@@ -479,9 +487,9 @@ class SUGAR_plot:
         P.errorbar(Av,MAG[:,Bin],linestyle='',xerr=None,yerr=N.sqrt(self.Y_build_error[:,Bin]),ecolor='blue',alpha=0.7,marker='.',zorder=0)
         scat=P.scatter(Av,MAG[:,Bin],zorder=100,s=50,c='b')
             
-        P.plot(AVV,slopes[Bin]*AVV,'r',label='$\gamma_{%i\AA}$'%(self.X[Bin]))
+        P.plot(AVV,slopes[Bin]*AVV,'r',label='$\gamma_{%i\AA}$'%(self.X[Bin]),lw=3)
         P.plot(AVV,CCM31[Bin]*AVV,'k--',linewidth=3,label='CCM $(R_V=3.1)$')
-        P.plot(AVV,CCM26[Bin]*AVV,'r--',linewidth=3,label='CCM $(R_V=2.7)$')
+        P.plot(AVV,CCM26[Bin]*AVV,'b--',linewidth=3,label='CCM $(R_V=2.7)$')
         P.plot(AVV,CCM14[Bin]*AVV,'k-.',linewidth=3,label='CCM $(R_V=1.4)$')
         P.ylabel('$M(t=0,\lambda)-M_0(t=0,\lambda) - \sum_{i=1}^{i=3} \\alpha_i(0,\lambda) q_i$',fontsize=18)
         P.xlabel('$A_{\lambda_0}$',fontsize=20)
@@ -492,9 +500,9 @@ class SUGAR_plot:
 
         P.subplot(2,1,1)
         P.scatter(self.X[Bin],slopes[Bin],c='r',marker='o',s=100)
-        P.plot(self.X,slopes,'r',label= '$\gamma_{\lambda}$')
+        P.plot(self.X,slopes,'r',label= '$\gamma_{\lambda}$',lw=3)
         P.plot(self.X,CCM31,'k-.',linewidth=3,label= 'CCM $(R_V=3.1)$')
-        P.plot(self.X,CCM26,'r--',linewidth=3,label= 'CCM $(R_V=2.7)$')
+        P.plot(self.X,CCM26,'b--',linewidth=3,label= 'CCM $(R_V=2.7)$')
         P.plot(self.X,CCM14,'k--',linewidth=3,label= 'CCM $(R_V=1.4)$')
         P.ylabel(r'$(\partial A_{\lambda}$ / $\partial A_V)$',fontsize=20)
         P.xlabel('wavelength [$\AA$]',fontsize=20)
@@ -744,13 +752,13 @@ if __name__=='__main__':
     
     #plot_disp_eig(lst_dic,dic = 'disp_eig.pkl')
     #P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
-    plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1],dic='vec_emfa_residual.pkl')
+    #plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1],dic='vec_emfa_residual.pkl')
     #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
-    #SP=SUGAR_plot('../../Desktop/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')
+    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')
     #SP.plot_bin_Av_slope(42)
     #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
-    #SP.plot_spectrum_corrected()
+    SP.plot_spectrum_corrected()
     #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
     #SP.plot_spectral_variability(name_fig=None)
 
