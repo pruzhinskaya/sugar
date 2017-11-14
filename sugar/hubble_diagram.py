@@ -107,7 +107,7 @@ class Hubble_diagram:
         self.VAR=N.zeros(len(self.Y))
         A=N.array([1.,Alpha,Beta])
         for sn in range(len(self.Y)):
-            numerateur= (self.Y[sn] - MB + Alpha*self.data[sn,0] - Beta*self.data[sn,1]) - distance_modulus(self.zhelio[sn],self.zcmb[sn])
+            numerateur= (self.Y[sn] - MB + Alpha*self.data[sn,0] + Beta*self.data[sn,1]) - distance_modulus(self.zhelio[sn],self.zcmb[sn])
             denominateur=(A.dot(N.dot(self.data_cov[sn],A.reshape(1,len(A)).T)))+self.disp_intrinseque**2+self.dmz[sn]**2
             chi2[sn]=numerateur**2/denominateur
             self.residu[sn]=numerateur
@@ -124,7 +124,7 @@ class Hubble_diagram:
 
             return self.chi2
 
-        Find_param=minuit.Minuit(_compute_chi2, alpha=-0.15,beta=2.9,mb=-19.1)
+        Find_param=minuit.Minuit(_compute_chi2, alpha=-0.15,beta=-2.9,mb=-19.1)
             
         Find_param.migrad()
         self.Params=Find_param.values
@@ -139,7 +139,7 @@ class Hubble_diagram:
                     print 'je cherche de la dispersion pour la %i eme fois'%(calls+1)
                     self._compute_dispertion()
                     self.dispertion_intrinseque=copy.deepcopy(self.disp)
-                    Find_param=minuit.Minuit(_compute_chi2, alpha=-0.13,beta=2.81,mb=0.)
+                    Find_param=minuit.Minuit(_compute_chi2, alpha=-0.13,beta=-2.81,mb=0.)
                 
                     Find_param.migrad()
                     self.Params=Find_param.values
@@ -209,13 +209,13 @@ if __name__=="__main__":
 
     binning = N.linspace(-0.55,0.40,10)
 
-    #plt.figure()
-    #P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
-    #P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR $\Delta M_{Grey}$ (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
-    #P.ylim(0,50)
-    #P.ylabel('# of SNIa',fontsize=20)
-    #P.xlabel('residuals (mag)',fontsize=20)
-    #P.legend()
+    P.figure()
+    P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
+    P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR $\Delta M_{Grey}$ (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
+    P.ylim(0,50)
+    P.ylabel('# of SNIa',fontsize=20)
+    P.xlabel('residuals (mag)',fontsize=20)
+    P.legend()
 
     dico = cPickle.load(open('../../sngc/sngc/residal_for_maria.pkl'))
     sn_lssfr = dico['sn_name']
