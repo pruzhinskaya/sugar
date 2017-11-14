@@ -194,6 +194,10 @@ class hubble_salt2(Hubble_diagram):
         cov[:,2,2] = (lds.C_err**2)[Filtre]
         cov[:,1,2] = lds.X1_C_cov[Filtre]
         cov[:,2,1] = lds.X1_C_cov[Filtre]
+        cov[:,0,1] = lds.X1_mb_cov[Filtre]
+        cov[:,1,0] = lds.X1_mb_cov[Filtre]
+        cov[:,0,2] = lds.C_mb_cov[Filtre]
+        cov[:,2,0] = lds.C_mb_cov[Filtre]
         
         Hubble_diagram.__init__(self,lds.mb[Filtre],data,cov,lds.zhelio[Filtre],lds.zcmb[Filtre],lds.zerr[Filtre])
         self.Make_hubble_diagram()
