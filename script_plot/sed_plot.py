@@ -16,7 +16,25 @@ from matplotlib.widgets import Slider, Button, RadioButtons
 import sys,os,optparse     
 from scipy.stats import norm as NORMAL_LAW
 import sugar
+import cosmogp
 
+class gp_interp:
+
+    def __init__(self,time,y):
+
+        self.time = time
+        self.y = y
+
+        self.gp = cosmogp.gaussian_process(self.y, self.time, y_err=N.ones(len(self.y))*0.03,
+                                           Mean_Y=self.y, diff=[0], Time_mean=self.time,
+                                           kernel='RBF1D')
+        self.gp.hyperparameters = [0.5,6.]
+        
+    def interpolate(self,Time):
+        self.gp.get_prediction(new_binning=Time,
+                               svd_method=False)
+        
+        return self.gp.Prediction[0]
 
 
 def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl',
@@ -465,6 +483,126 @@ class residual_plot:
 
 
 
+    def plot_spectra_movie(self,sn,T_min=-12,T_max=42):
+
+        def go_to_flux(X,Y,ABmag0=48.59):
+            Flux_nu=10**(-0.4*(Y+ABmag0))
+            f = X**2 / 299792458. * 1.e-10
+            Flux=Flux_nu/f
+            return Flux
+
+        Time = N.linspace(-12,42,19)
+        time_movie = N.linspace(-6,42,200)
+
+        IND=None
+        for i,SN in enumerate(self.sn_name):
+            if SN==sn:
+                IND=i
+
+        Phase = []
+        DAYS = [-999]
+
+        salt = []
+        data = []
+        
+        #for j in range(len(self.dic[sn].keys())):
+        #    days=self.dic[sn]['%i'%(j)]['phase_salt2']
+        #    if days>T_min and days<T_max:
+        #        DAYS.append(days)
+        #        if '%10.1f'%DAYS[-2]!='%10.1f'%DAYS[-1]:                    
+        #            YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
+        #            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+        #            salt.append(YS)
+        #            wave_salt = self.dicSA[sn]['%i'%(j)]['X']
+        #            wave_data = self.dic[sn]['%i'%(j)]['X']
+        #            Phase.append(self.dic[sn]['%i'%(j)]['phase_salt2'])
+
+        data = N.zeros((19,190))
+        gp_data = N.loadtxt('../sugar/data_output/gaussian_process_greg/gp_predict/' + sn + '.predict')
+        wave_data = N.zeros(190)
+        for Bin in range(190):
+            data[:,Bin] = gp_data[:,2][Bin*19:(Bin+1)*19]
+            wave_data[Bin] = gp_data[:,1][Bin*19]
+                    
+        Phase=N.array(Phase)
+        salt = N.array(salt)
+
+        SUGAR = N.zeros((len(time_movie),190))
+        DATA = N.zeros((len(time_movie),190))
+        SALT = N.zeros((len(time_movie),190))
+
+        for Bin in range(190):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+            SUGAR[:,Bin]+=SPLINE_Mean(time_movie)
+            for i in range(3):
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*19:(Bin+1)*19])
+            
+                SUGAR[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(time_movie)
+
+            SUGAR[:,Bin]+=self.dicS[sn]['grey']
+            SUGAR[:,Bin]+=self.dicS[sn]['Av']*sugar.extinctionLaw(self.dic[sn]['0']['X'][Bin],
+                                                                  Rv=self.Rv)
+            SUGAR[:,Bin] = go_to_flux(self.dic[sn]['0']['X'][Bin],SUGAR[:,Bin])
+
+        for Bin in range(190):
+            SPLINE=inter.InterpolatedUnivariateSpline(Time,data[:,Bin])
+            DATA[:,Bin]+=SPLINE(time_movie)
+            DATA[:,Bin] = go_to_flux(self.dic[sn]['0']['X'][Bin],DATA[:,Bin])
+
+        #for Bin in range(len(wave_salt)):
+        #    SPLINE=gp_interp(Phase,salt[:,Bin])
+        #    SALT[:,Bin]+=SPLINE.interpolate(time_movie)
+        #    SALT[:,Bin] = go_to_flux(wave_salt[Bin],SALT[:,Bin])
+
+        import matplotlib
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as manimation
+
+        fig = plt.figure(figsize=(8,8))
+        plt.subplots_adjust(top=0.99,right=0.99,hspace=0,wspace=0)
+
+        FFMpegWriter = manimation.writers['ffmpeg']
+        metadata = dict(title=sn, artist='Matplotlib',
+                        comment='sugar model')
+        writer = FFMpegWriter(fps=15, metadata=metadata, bitrate=5000)
+        Name_mp4=sn + ".mp4"
+
+        MIN = N.min(DATA)
+        MAX = N.max(DATA)
+
+        #MMAX = N.max(DATA-SALT)
+        #MMIN = N.min(DATA-SALT)
+
+        with writer.saving(fig, Name_mp4, 200):
+            for i in range(len(time_movie)):
+                print i 
+                plt.subplot(2,1,1)
+                plt.cla()
+                plt.plot(wave_data,DATA[i],'k',lw=3,label=sn)
+                #plt.plot(wave_salt,SALT[i],'r',lw=3,label='SALT2.4')
+                plt.plot(wave_data,SUGAR[i],'b',lw=3,label='SUGAR')
+                if abs(time_movie[i])>2:
+                    plt.text(4000,0.020,'%.2f days'%(time_movie[i]),fontsize=18)
+                else:
+                    plt.text(4000,0.020,'%.2f day'%(time_movie[i]),fontsize=18)
+                plt.xlim(3500,8500)
+                plt.xticks([],[])
+                plt.ylabel('Flux [erg s$^{-1}$ cm$^{-2}$ $\AA^{-1}$]',fontsize=18)
+                plt.ylim(MIN,0.024)
+                plt.legend()
+                #plt.gca().invert_yaxis()
+                plt.subplot(2,1,2)
+                plt.cla()
+                plt.plot(wave_data,DATA[i]/DATA[i],'k',lw=3)
+                plt.plot(wave_data,DATA[i]/SUGAR[i],'b',lw=3)
+                #plt.plot(wave_data,DATA[i]-SALT[i],'r',lw=3)
+                plt.ylim(0.5,1.48)
+                plt.xlim(3500,8500)
+                plt.ylabel(sn+'/SUGAR',fontsize=20)
+                plt.xlabel(r'wavelength $[\AA]$', fontsize=20)
+                writer.grab_frame()
+                
+
     def plot_spectra_reconstruct_residuals(self,sn,T_min=-12,T_max=42):
 
         fig,ax1=P.subplots(figsize=(10,8))
@@ -709,20 +847,25 @@ if __name__=='__main__':
     #SED.plot_spectrophtometric_effec_time(comp=2)
 
 
-    Compare_TO_SUGAR_parameter()
+    #Compare_TO_SUGAR_parameter()
 
-    #dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
+    dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
-    #rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
-    #                   '../sugar/data_output/SUGAR_model_v1.asci',
-    #                   '../sugar/data_output/sugar_parameters.pkl',
-    #                   '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
-    #                   dic_salt = '../sugar/data_input/file_pf_bis.pkl')
+    rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
+                       '../sugar/data_output/SUGAR_model_v1.asci',
+                       '../sugar/data_output/sugar_parameters_for_greg.pkl',
+                       '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
+                       dic_salt = '../sugar/data_input/file_pf_bis.pkl')
 
-
+    
     #sn = 'PTF09dnl'
+    #sn = 'SN2006X'
+    #rp.plot_spectra_movie(sn)
+    sn = 'SN2012cu'
+    rp.plot_spectra_movie(sn)
     
     #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
+    
     #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
     #sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
     #P.savefig('plot_paper/reconstruct/'+sn+'_residual.pdf')
