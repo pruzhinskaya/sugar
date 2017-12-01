@@ -219,20 +219,30 @@ class build_spectral_data:
                 spectra[pause]['Y'] = Astro.Coords.flbda2ABmag(spectra[pause]['X'], spectra[pause]['Y'])
             dic_ab.update({sn:spectra})
         self.dico_spectra = dic_ab
-#
-#
-#    def Cosmology_corrected(self):
-#        self.dic_cosmo={}
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_AB[sn])
-#            for j,pause in enumerate(self.dic_AB[sn].keys()):
-#                print 'processing '+sn+' pause '+pause
-#                SPEC[pause]['Y']+= -5.*N.log10(d_l(SPEC[pause]['z_cmb'],SNLS=True))+5.
-#                SPEC[pause].update({'Y_flux':go_to_flux(SPEC[pause]['X'],copy.deepcopy(SPEC[pause]['Y']))})    
-# 
-# 
-#            self.dic_cosmo.update({sn:SPEC})
+
+    def cosmology_corrected(self):
+        """
+        Correct spectra from distance using LCDM cosmology.
+        """
+        dic_spectra = {}
+        for i,sn in enumerate(self.sn_name):
+            print '%i/%i'%(((i+1),len(self.sn_name)))
+            spectra = copy.deepcopy(self.dico_spectra[sn])
+            for j,pause in enumerate(spectra.keys()):
+                print 'processing ' + sn + ' pause ' + pause
+                spectra[pause]['Y'] += -5.*np.log10(sugar.distance_modulus(spectra[pause]['z_helio'], spectra[pause]['z_cmb'])) + 5.
+                spectra[pause].update({'Y_flux':go_to_flux(spectra[pause]['X'],copy.deepcopy(spectra[pause]['Y']))})
+            dic_spectra.update({sn:spectra})
+        self.dico_spectra = dic_spectra
+
+    def write_pkl(self,pkl_name):
+        """
+        write output in a pkl file.
+        """
+        File=open(pkl_name,'w')
+        cPickle.dump(self.dico_spectra,File)
+        File.close()
+
 #
 #            
 #
@@ -310,25 +320,6 @@ class build_spectral_data:
 #            dic_cosmo.update({sn:spec})
 #
 #        self.dic_cosmo=dic_cosmo
-#
-#
-#    def select_sn_in_good_sample(self,META):
-#
-#        meta = SnfMetaData.SnfMetaData(META)
-#        
-#        meta.add_filter(idr__subset__in = ['training','validation'])#,'bad','auxiliary'])
-#        sn_name=meta.targets('target.name',sort_by='target.name')
-#        dic_cosmo={}
-#        for i,sn in enumerate(sn_name):
-#            print '%i/%i'%(((i+1),len(sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#            #if len(SPEC.keys())>4:
-#            #    dic_cosmo.update({sn:SPEC})
-#            dic_cosmo.update({sn:SPEC})
-#            
-#        self.sn_name=dic_cosmo.keys()
-#        self.dic_cosmo=dic_cosmo
-#
 #
 #
 #    def select_night_in_previous_dico(self,dico_pkl):
@@ -420,35 +411,6 @@ class build_spectral_data:
 #        self.dic_bad=dic_bad
 #
 #
-#    def Build_without_Cosmology_corrected(self):
-#        self.dic_without_cosmo={}
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#            for j,pause in enumerate(self.dic_cosmo[sn].keys()):
-#                print 'processing '+sn+' pause '+pause
-#                SPEC[pause]['Y']-= -5.*N.log10(d_l(SPEC[pause]['z_cmb'],SNLS=True))+5.
-#
-#            self.dic_without_cosmo.update({sn:SPEC})
-#
-#        
-#    def write_pkl(self,pkl_name):
-#        
-#        File=open(pkl_name,'w')
-#        cPickle.dump(self.dic_cosmo,File)
-#        File.close()
-#
-#        if self.BAD:
-#            File=open('/sps/snovae/user/leget/ALLAIRE/bad_spectra.pkl','w')
-#            cPickle.dump(self.dic_bad,File)
-#            File.close()
-#
-#    def write_without_cosmo_pkl(self,pkl_name):
-#        
-#        File=open(pkl_name,'w')
-#        cPickle.dump(self.dic_without_cosmo,File)
-#        File.close()
-#
 #
 #class build_at_max_data:
 #
@@ -537,3 +499,5 @@ if __name__=="__main__":
     bsd.load_spectra()
     bsd.resampled_spectra(lmin=3200, lmax=8900, velocity=1500.)
     bsd.to_ab_mag()
+    bsd.cosmology_corrected()
+    bsd.write_pkl('test_output.pkl')
