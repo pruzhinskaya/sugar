@@ -5,42 +5,86 @@ import scipy as sp
 import cPickle
 import copy
 import sugar
-#import pySnurp ##de-reddenning, de-redshift
-#import merged_spectrum as ms ## do the rebinning
-#from ToolBox import Astro,Cosmology ## flux to ABmag, distance
+import pySnurp
+import os
+from ToolBox import Astro, Cosmology
 import scipy.interpolate as inter
+#import merged_spectrum as ms ## do the rebinning
 #import SnfMetaData # select training
 #import mpl_to_delate as mpl # remove by eye strange target
 
 
 class spec:
     """to do."""
-    def __init__(self,y,x,v,step):
+    def __init__(self, y, x, v, step):
         """to do."""
         self.y=y
         self.x=x
         self.v=v
         self.step=step
 
+def bin_spec(spec,x):
+    """
+    Returns the bin in which x is in the spectrum.
+    In case x is not in the spectrum, the return value is an empty array
+    """
+    # comput the true/false array
+    ubound = spec.x + spec.step/2
+    lbound = np.concatenate(( [(spec.x-spec.step/2)[0]],ubound[:-1]))
+    cond = (x<ubound) & (x>=lbound)
+    return np.nonzero(cond)
 
-def go_to_flux(X,Y,ABmag0=48.59):
+def mean_spec(spec, x1, x2):
+    """
+    Returns the integral of the flux over the wavelength range defined as [x1,x2], divided by the wavelength range in order to get a flux/wavelength.
+    the variance of this quantity is returned as a 2nd parameter
+    Raises ValueError if the spec range soesn't cover the intended bin width
+    """
+    # determine first, middle and last bins : upper bound belongs to upper bin
+    bin1 = bin_spec(spec,x1)
+    bin2 = bin_spec(spec,x2)
+    if bin1 == bin2 or x2 == (spec.x + spec.step / 2)[-1]:
+        return spec.y[bin1], spec.v[bin1]
+    binbetween = range(bin1[0][0]+1,bin2[0][0])
+    # compute flux integral
+    flux1 = spec.y[bin1] * ((spec.x+spec.step/2)[bin1]-x1)
+    flux2 = spec.y[bin2] * (x2+(-spec.x+spec.step/2)[bin2])
+    fluxbetween = sum((spec.y*spec.step)[binbetween])
+    retflux = (flux1+flux2+fluxbetween)/(x2-x1)
+    # compute variance of the previous quantity
+    var1 = spec.v[bin1] * ((spec.x+spec.step/2)[bin1]-x1)**2
+    var2 = spec.v[bin2] * (x2+(-spec.x+spec.step/2)[bin2])**2
+    varbetween = sum((spec.v*spec.step**2)[binbetween])
+    retvar = (var1+var2+varbetween)/(x2-x1)**2
+    if len(retflux) == 0:
+        raise ValueError("Bound error %f %f"%(x1,x2))
+    return retflux, retvar
+
+def rebin(spec, xarray):
+    """xarray is the array of bin edges (1 more than number of bins)."""
+    outx = (xarray[1:]+xarray[:-1])/2
+    outflux = np.zeros(len(outx))
+    outvar = np.zeros(len(outx))
+    for i in xrange(len(outx)):
+        outflux[i], outvar[i] = mean_spec(spec,xarray[i],xarray[i+1])
+    return outx, outflux, outvar
+
+def go_to_flux(X, Y, ABmag0=48.59):
     """Convert AB mag to flux."""
-    Flux_nu=10**(-0.4*(Y+ABmag0))
+    Flux_nu = 10**(-0.4*(Y+ABmag0))
     f = X**2 / 299792458. * 1.e-10
-    Flux_lambda=Flux_nu/f
+    Flux_lambda = Flux_nu/f
     return Flux_lambda
 
-
-def check_bounds(X,lmin,lmax,step):
+def check_bounds(X, lmin, lmax, step=10.):
     """check the bounds."""
-    spec_min=max([N.min(X[sn]) for sn in range(len(X))])
-    spec_max=min([N.max(X[sn]) for sn in range(len(X))])
+    spec_min = max([np.min(X[sn]) for sn in range(len(X))])
+    spec_max = min([np.max(X[sn]) for sn in range(len(X))])
     if spec_min > lmin:
-        lmin=spec_min
-    if spec_max<lmax+step:
-        lmax=spec_max-step
-    return lmin,lmax
-
+        lmin = spec_min
+    if spec_max < lmax+step:
+        lmax = spec_max-step
+    return lmin, lmax
 
 class build_spectral_data:
     """
@@ -48,30 +92,28 @@ class build_spectral_data:
     It will be used for gaussian process interpolation, 
     and SNIa fitting.
     """
-    def __init__(self, meta, redshift_min=0.01, redshift_max=9999.,
+    def __init__(self, idr_rep='data_input/SNF-0203-CABALLOv2/', redshift_min=0.01, redshift_max=9999.,
                  mjd_min = 0., mjd_max=55250., day_max=2.5, guy10=True):
         """
         Init build spectral data.
         """
-        self.meta = cPickle.load(open(meta))
+        self.idr_rep = idr_rep
+        self.meta = cPickle.load(open(self.idr_rep+'META.pkl'))
         self.redshift_min = redshift_min
         self.redshift_max = redshift_max
         self.mjd_min = mjd_min
         self.mjd_max = mjd_max
         self.guy10 = guy10
         self.day_max = day_max
-        sn_name = self.meta.keys()
 
+        sn_name = self.meta.keys()
         filtre = np.array([True] * len(sn_name))
 
-        lsd = sugar.load_data_sugar()
-        
         for i in range(len(sn_name)):
             sn = sn_name[i]
             day_max_mjd = self.meta[sn]['salt2.DayMax']
             closest_to_day_max = min(abs(np.array([self.meta[sn]['spectra'][exposure]['salt2.phase'] \
                                                    for exposure in self.meta[sn]['spectra'].keys()])))
-            AA = len(self.meta[sn]['spectra'].keys())
             zhelio = self.meta[sn]['host.zhelio']
             sample = self.meta[sn]['idr.subset']
 
@@ -83,89 +125,100 @@ class build_spectral_data:
                 filtre[i] = False
             if self.guy10 and sample not in ['training','validation']:
                 filtre[i] = False
-            if filtre[i]:
-                if sn not in lsd.sn_name:
-                    print sn, day_max_mjd, closest_to_day_max, zhelio, sample, AA
 
         self.sn_name = np.array(sn_name)[filtre]
         self.sn_name.sort()
 
-#    def load_spectra(self):
-#
-#        self.dic={}
-#        self.X=[]
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC={}
-#            ind=0
-#            for j,pause in enumerate(self.dicM[sn]['spectra'].keys()):
-#                print 'processing '+sn+' pause '+pause 
-#                Spec=pySnurp.Spectrum(self.dicM[sn]['spectra'][pause]['idr.spec_merged'])
-#                Spec.deredden(self.dicM[sn]['target.mwebv'])
-#                Spec.deredshift(self.dicM[sn]['host.zhelio'])
-#                    
-#                if len(Spec.x)==2691:
-#
-#                    SPEC.update({'%i'%(ind):{'Y':Spec.y,
-#                                             'X':Spec.x,
-#                                             'V':Spec.v,
-#                                             'step':Spec.step,
-#                                             'days':self.dicM[sn]['spectra'][pause]['obs.mjd'],
-#                                             'z_cmb':self.dicM[sn]['host.zcmb'],
-#                                             'z_helio':self.dicM[sn]['host.zhelio'],
-#                                             'z_err':self.dicM[sn]['host.zhelio.err'],
-#                                             'phase_salt2':self.dicM[sn]['spectra'][pause]['salt2.phase'],
-#                                             'pause':pause}})
-#                    self.X.append(Spec.x)
-#                    ind+=1
-#
-#            self.dic.update({sn:SPEC})
-#
-#
-#    def build_resampled_specs(self,lmin=3200,lmax=8900,step=10,delta_lambda=0.005):
-#        
-#        self.dic_binned={}
-#        lmin,lmax=check_bounds(self.X,lmin,lmax,step=step)
-#        #rebinarray=N.arange(lmin,lmax+step,step)
-#        rebinarray=[lmin]
-#        i=0
-#        while rebinarray[i]<lmax:
-#            rebinarray.append(rebinarray[i]*delta_lambda+rebinarray[i])
-#            i+=1
-#        if rebinarray[i]>lmax:
-#            del rebinarray[i]
-#
-#        rebinarray=N.array(rebinarray)    
-#        print rebinarray
-#        print "%i filters created"%(len(rebinarray)-1)
-#
-#        
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic[sn])
-#            for j,pause in enumerate(self.dic[sn].keys()):
-#                print 'processing '+sn+' pause '+pause 
-#            
-#                Spec=spec(SPEC[pause]['Y'],SPEC[pause]['X'],SPEC[pause]['V'],SPEC[pause]['step'])
-#                SPEC[pause]['X'],SPEC[pause]['Y'],SPEC[pause]['V']=ms.rebin(Spec,rebinarray)
-#
-#            self.dic_binned.update({sn:SPEC})
-#
-#
-#    def to_AB_mag(self):
-#
-#        self.dic_AB={}
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_binned[sn])
-#            for j,pause in enumerate(self.dic_binned[sn].keys()):
-#                print 'processing '+sn+' pause '+pause
-#                SPEC[pause].update({'V_flux':copy.deepcopy(SPEC[pause]['V'])})
-#                SPEC[pause].update({'Y_flux_without_cosmology':copy.deepcopy(SPEC[pause]['Y'][(SPEC[pause]['X']>3340.)])})
-#                SPEC[pause]['V']=Astro.Coords.flbda2ABmag(SPEC[pause]['X'],SPEC[pause]['Y'],var=SPEC[pause]['V'])
-#                SPEC[pause]['Y']=Astro.Coords.flbda2ABmag(SPEC[pause]['X'],SPEC[pause]['Y'])
-#
-#            self.dic_AB.update({sn:SPEC})
+        self.dico_spectra = {}
+        self.observed_wavelength = []
+
+    def load_spectra(self):
+        """
+        Load spectra select within the idr and the init.
+        Will correct also from Milky way extinction and
+        de-redshift the spectra using heliocentric redshift. 
+        """
+        self.dico_spectra = {}
+        self.observed_wavelength = []
+
+        os.system('ln -s ' + self.idr_rep + 'training/ training')
+        os.system('ln -s ' + self.idr_rep + 'validation/ validation')
+        os.system('ln -s ' + self.idr_rep + 'bad/ bad')
+        os.system('ln -s ' + self.idr_rep + 'auxiliary/ auxiliary')
+
+        for i,sn in enumerate(self.sn_name):
+            spec = {}
+            ind = 0
+            for j,pause in enumerate(self.meta[sn]['spectra'].keys()):
+                get_spectra = pySnurp.Spectrum(self.meta[sn]['spectra'][pause]['idr.spec_merged'])
+                get_spectra.deredden(self.meta[sn]['target.mwebv'])
+                get_spectra.deredshift(self.meta[sn]['host.zhelio'])
+                    
+                if len(get_spectra.x) == 2691: #R and B channel alive
+                    spec.update({'%i'%(ind):{'Y': get_spectra.y,
+                                             'X': get_spectra.x,
+                                             'V': get_spectra.v,
+                                             'step': get_spectra.step,
+                                             'days': self.meta[sn]['spectra'][pause]['obs.mjd'],
+                                             'z_cmb': self.meta[sn]['host.zcmb'],
+                                             'z_helio': self.meta[sn]['host.zhelio'],
+                                             'z_err': self.meta[sn]['host.zhelio.err'],
+                                             'phase_salt2': self.meta[sn]['spectra'][pause]['salt2.phase'],
+                                             'pause': pause}})
+                    self.observed_wavelength.append(get_spectra.x)
+                    ind += 1
+            self.dico_spectra.update({sn:spec})
+
+        os.system('rm -rf training')
+        os.system('rm -rf validation')
+        os.system('rm -rf bad')
+        os.system('rm -rf auxiliary')
+
+    def resampled_spectra(self, lmin=3200, lmax=8900, velocity=1500.):
+        """
+        Resample spectra on the same grid.
+        Sampled in velocity.
+        """
+        delta_lambda = velocity / 3.e5
+        dico_spectra = {}
+        lmin, lmax = check_bounds(self.observed_wavelength,lmin,lmax)
+        rebinarray = [lmin]
+        i = 0
+        while rebinarray[i]<lmax:
+            rebinarray.append((rebinarray[i] * delta_lambda) + rebinarray[i])
+            i += 1
+        if rebinarray[i]>lmax:
+            del rebinarray[i]
+        rebinarray = np.array(rebinarray)
+        print "%i filters created"%(len(rebinarray)-1)
+        
+        for i,sn in enumerate(self.sn_name):
+            spectra = copy.deepcopy(self.dico_spectra[sn])
+            for j,pause in enumerate(self.dico_spectra[sn].keys()):
+                print 'processing '+sn+' pause '+pause 
+                spec_object=spec(spectra[pause]['Y'], spectra[pause]['X'], spectra[pause]['V'], spectra[pause]['step'])
+                spectra[pause]['X'], spectra[pause]['Y'], spectra[pause]['V'] = rebin(spec_object,rebinarray)
+
+            dico_spectra.update({sn:spectra})
+
+        self.dico_spectra = dico_spectra
+
+    def to_ab_mag(self):
+        """
+        Convert the actual dic of spectra to AB mag.
+        """
+        dic_ab = {}
+        for i,sn in enumerate(self.sn_name):
+            print '%i/%i'%(((i+1),len(self.sn_name)))
+            spectra = copy.deepcopy(self.dico_spectra[sn])
+            for j,pause in enumerate(spectra.keys()):
+                print 'processing '+sn+' pause '+pause
+                spectra[pause].update({'V_flux':copy.deepcopy(spectra[pause]['V'])})
+                spectra[pause].update({'Y_flux_without_cosmology':copy.deepcopy(spectra[pause]['Y'])})
+                spectra[pause]['V'] = Astro.Coords.flbda2ABmag(spectra[pause]['X'], spectra[pause]['Y'], var=spectra[pause]['V'])
+                spectra[pause]['Y'] = Astro.Coords.flbda2ABmag(spectra[pause]['X'], spectra[pause]['Y'])
+            dic_ab.update({sn:spectra})
+        self.dico_spectra = dic_ab
 #
 #
 #    def Cosmology_corrected(self):
@@ -480,4 +533,7 @@ class build_spectral_data:
 #
 if __name__=="__main__":
 
-    bsd = build_spectral_data('data_input/SNF-0203-CABALLOv2/META.pkl')
+    bsd = build_spectral_data('data_input/SNF-0203-CABALLOv2/')
+    bsd.load_spectra()
+    bsd.resampled_spectra(lmin=3200, lmax=8900, velocity=1500.)
+    bsd.to_ab_mag()
