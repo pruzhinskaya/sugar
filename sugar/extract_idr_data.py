@@ -243,110 +243,110 @@ class build_spectral_data:
         cPickle.dump(self.dico_spectra,File)
         File.close()
 
-#
-#            
-#
-#    def reorder_and_clean_dico_cosmo(self,SALT2=True):
-#        dic_cosmo={}
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#            spec={}
-#            Ind=0
-#            for j in range(len(self.dic_cosmo[sn].keys())):
-#                Min=(10.**23)
-#                ind='0'
-#                for k,pause in enumerate(SPEC):
-#                    phase=SPEC[pause]['phase_salt2']
-#                    if phase<Min:
-#                        Min=phase
-#                        ind=pause
-#                if N.sum(N.isfinite(SPEC[ind]['Y']))==len(SPEC[ind]['Y']):
-#                    SPEC[ind]['Y']=SPEC[ind]['Y'][(SPEC[ind]['X']>3340.)]
-#                    SPEC[ind]['V']=SPEC[ind]['V'][(SPEC[ind]['X']>3340.)]
-#                    SPEC[ind]['Y_flux']=SPEC[ind]['Y_flux'][(SPEC[ind]['X']>3340.)]
-#                    SPEC[ind]['V_flux']=SPEC[ind]['V_flux'][(SPEC[ind]['X']>3340.)]
-#                    SPEC[ind]['X']=SPEC[ind]['X'][(SPEC[ind]['X']>3340.)]
-#                    spec.update({'%i'%(Ind):copy.deepcopy(SPEC[ind])})
-#                    Ind+=1
-#                else:
-#                    Delta=abs(N.sum(N.isfinite(SPEC[ind]['Y']))-len(SPEC[ind]['Y']))
-#                    if Delta<100:
-#                        Filtre=N.isfinite(SPEC[ind]['Y'])
-#                        SPLINE=inter.InterpolatedUnivariateSpline(SPEC[ind]['X'][Filtre],SPEC[ind]['Y'][Filtre])
-#                        SPEC[ind]['Y'][~Filtre]=SPLINE(SPEC[ind]['X'][~Filtre])
-#                        SPEC[ind]['V'][~Filtre]=100.
-#                        SPEC[ind]['Y']=SPEC[ind]['Y'][(SPEC[ind]['X']>3340.)]
-#                        SPEC[ind]['V']=SPEC[ind]['V'][(SPEC[ind]['X']>3340.)]
-#                        SPEC[ind]['Y_flux']=SPEC[ind]['Y_flux'][(SPEC[ind]['X']>3340.)]
-#                        SPEC[ind]['V_flux']=SPEC[ind]['V_flux'][(SPEC[ind]['X']>3340.)]
-#                        SPEC[ind]['X']=SPEC[ind]['X'][(SPEC[ind]['X']>3340.)]
-#                        spec.update({'%i'%(Ind):copy.deepcopy(SPEC[ind])})
-#                        Ind+=1
-#
-#
-#                del SPEC[ind]
-#
-#
-#            dic_cosmo.update({sn:spec})
-#    
-#        self.dic_cosmo=dic_cosmo
-#
-#        
-#    def kill_blue_runaway(self):
-#        X=self.dic_cosmo['PTF09dlc']['0']['X']
-#        Filtre_UV=N.array([False]*len(X))
-#        for i in range(len(Filtre_UV)):
-#            if X[i]>3700 and X[i]<3900:
-#                Filtre_UV[i]=True
-#
-#        dic_cosmo={}
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#            spec={}
-#            Ind=0
-#            for j in range(len(self.dic_cosmo[sn].keys())):
-#                x=X[Filtre_UV]
-#                y=SPEC['%i'%(j)]['Y'][Filtre_UV]
-#                y_err=N.sqrt(SPEC['%i'%(j)]['V'][Filtre_UV])
-#                Multi=M.Multilinearfit(x,y,xerr=None,yerr=None,covx=None,Beta00=None) 
-#                Multi.Multilinearfit(adddisp=False) 
-#
-#                if Multi.alpha[0]<0 and N.mean(y)<-10.:
-#                    spec.update({'%i'%(Ind):copy.deepcopy(SPEC['%i'%j])})
-#                    Ind+=1
-#                del SPEC['%i'%(j)]
-#            dic_cosmo.update({sn:spec})
-#
-#        self.dic_cosmo=dic_cosmo
-#
-#
+
+    def reorder_and_clean(self):
+        """
+        Reorder each SNIa spectra by incrasing phasing and clean from neagtive flux.
+        """
+        dic_spectra = {}
+        for i,sn in enumerate(self.sn_name):
+            print '%i/%i'%(((i+1),len(self.sn_name)))
+            spectra = copy.deepcopy(self.dico_spectra[sn])
+            spec = {}
+            ind_new = 0
+            for j in range(len(spectra.keys())):
+                minimum = (10.**23)
+                ind = '0'
+                for k,pause in enumerate(spectra.keys()):
+                    phase = spectra[pause]['phase_salt2']
+                    if phase < minimum:
+                        minimum = phase
+                        ind = pause
+                if np.sum(np.isfinite(spectra[ind]['Y'])) == len(spectra[ind]['Y']):
+                    spectra[ind]['Y'] = spectra[ind]['Y'][(spectra[ind]['X']>3340.)]
+                    spectra[ind]['V'] = spectra[ind]['V'][(spectra[ind]['X']>3340.)]
+                    spectra[ind]['Y_flux'] = spectra[ind]['Y_flux'][(spectra[ind]['X']>3340.)]
+                    spectra[ind]['V_flux'] = spectra[ind]['V_flux'][(spectra[ind]['X']>3340.)]
+                    spectra[ind]['X'] = spectra[ind]['X'][(spectra[ind]['X']>3340.)]
+                    spec.update({'%i'%(ind_new):copy.deepcopy(spectra[ind])})
+                    ind_new += 1
+                else:
+                    delta = abs(np.sum(np.isfinite(spectra[ind]['Y']))-len(spectra[ind]['Y']))
+                    if delta < 100:
+                        filtre = np.isfinite(spectra[ind]['Y'])
+                        spline = inter.InterpolatedUnivariateSpline(spectra[ind]['X'][filtre],spectra[ind]['Y'][filtre])
+                        spectra[ind]['Y'][~filtre] = spline(spectra[ind]['X'][~filtre])
+                        spectra[ind]['V'][~filtre] = 100.
+                        spectra[ind]['Y'] = spectra[ind]['Y'][(spectra[ind]['X']>3340.)]
+                        spectra[ind]['V'] = spectra[ind]['V'][(spectra[ind]['X']>3340.)]
+                        spectra[ind]['Y_flux'] = spectra[ind]['Y_flux'][(spectra[ind]['X']>3340.)]
+                        spectra[ind]['V_flux'] = spectra[ind]['V_flux'][(spectra[ind]['X']>3340.)]
+                        spectra[ind]['X'] = spectra[ind]['X'][(spectra[ind]['X']>3340.)]
+                        spec.update({'%i'%(ind_new):copy.deepcopy(spectra[ind])})
+                        ind_new += 1
+
+                del spectra[ind]
+
+            dic_spectra.update({sn:spec})
+
+        self.dico_spectra = dic_spectra
+
+    def select_night_in_previous_dico(self,bad_spectra_pkl):
+        """
+        Will take a pkl file in the same format as the output
+        and remove spectra that don't match.
+        """
+        bad = cPickle.load(open(bad_spectra_pkl))
+        sn_bad = bad.keys()
+
+        dico_spectra = {}
+        for i, sn in enumerate(self.sn_name):
+            SPEC = copy.deepcopy(self.dico_spectra[sn])
+            if sn in sn_bad:
+                SPec = {}
+                PAUSE = []
+                IND = 0
+                for j in bad[sn].keys():
+                    PAUSE.append(bad[sn][j]['pause'])
+                for j in range(len(SPEC.keys())):
+                    if SPEC['%i'%(j)]['pause'] not in PAUSE:
+                        SPec.update({'%i'%(IND):SPEC['%i'%(j)]})
+                        IND+=1
+                dico_spectra.update({sn:SPec})
+            else:
+                dico_spectra.update({sn:SPEC})
+
+        self.sn_name = dico_spectra.keys()
+        self.dico_spectra = dico_spectra
+
 #    def select_night_in_previous_dico(self,dico_pkl):
-# 
-#        dic = cPickle.load(open(dico_pkl))
+#        """
+#        Will take a pkl file in the same format as the output
+#        and remove spectra that don't match.
+#        """
+#        dic = cPickle.load(open(dico_pkl))#
 #
-#        sn_name=dic.keys()
-#        dic_cosmo={}
+#        sn_name = dic.keys()
+#        dico_spectra = {}
 #        for i,sn in enumerate(self.sn_name):
 #            print sn 
 #            if sn in sn_name:
-#                SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#                SPec={}
-#                PAUSE=[]
-#                IND=0
+#                SPEC = copy.deepcopy(self.dic_cosmo[sn])
+#                SPec = {}
+#                PAUSE = []
+#                IND = 0
 #                for j in range(len(dic[sn].keys())):
 #                    PAUSE.append(dic[sn]['%i'%(j)]['pause'])
 #                for j in range(len(SPEC.keys())):
 #                    if SPEC['%i'%(j)]['pause'] in PAUSE:
 #                        SPec.update({'%i'%(IND):SPEC['%i'%(j)]})
 #                        IND+=1
-#                dic_cosmo.update({sn:SPec})
+#                dico_spectra.update({sn:SPec})
 #                if len(SPec.keys())!=len(dic[sn].keys()):
-#                    print 'ANDALOUSE ma gueule'
+#                    print 'not ok'
 #
-#        self.sn_name=dic_cosmo.keys()
-#        self.dic_cosmo=dic_cosmo
+#        self.sn_name = dic_spectra.keys()
+#        self.dico_spectra = dic_spectra
 #
 #    def kill_Blue_runaway_eye_control(self):
 #        X=self.dic_cosmo['PTF09dlc']['0']['X']
@@ -500,4 +500,7 @@ if __name__=="__main__":
     bsd.resampled_spectra(lmin=3200, lmax=8900, velocity=1500.)
     bsd.to_ab_mag()
     bsd.cosmology_corrected()
+    bsd.reorder_and_clean()
+    bsd.select_night_in_previous_dico('data_input/bad_spectra.pkl')
     bsd.write_pkl('test_output.pkl')
+    
