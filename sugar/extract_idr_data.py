@@ -98,7 +98,7 @@ class build_spectral_data:
         Init build spectral data.
         """
         self.idr_rep = idr_rep
-        self.meta = cPickle.load(open(self.idr_rep+'META.pkl'))
+        self.meta = cPickle.load(open(os.path.join(self.idr_rep,'META.pkl')))
         self.redshift_min = redshift_min
         self.redshift_max = redshift_max
         self.mjd_min = mjd_min
@@ -141,16 +141,17 @@ class build_spectral_data:
         self.dico_spectra = {}
         self.observed_wavelength = []
 
-        os.system('ln -s ' + self.idr_rep + 'training/ training')
-        os.system('ln -s ' + self.idr_rep + 'validation/ validation')
-        os.system('ln -s ' + self.idr_rep + 'bad/ bad')
-        os.system('ln -s ' + self.idr_rep + 'auxiliary/ auxiliary')
+        # E.G. Not neeed any more
+        #os.system('ln -s ' + self.idr_rep + 'training/ training')
+        #os.system('ln -s ' + self.idr_rep + 'validation/ validation')
+        #os.system('ln -s ' + self.idr_rep + 'bad/ bad')
+        #os.system('ln -s ' + self.idr_rep + 'auxiliary/ auxiliary')
 
         for i,sn in enumerate(self.sn_name):
             spec = {}
             ind = 0
             for j,pause in enumerate(self.meta[sn]['spectra'].keys()):
-                get_spectra = pySnurp.Spectrum(self.meta[sn]['spectra'][pause]['idr.spec_merged'])
+                get_spectra = pySnurp.Spectrum(os.path.join(self.idr_rep,self.meta[sn]['spectra'][pause]['idr.spec_merged']))
                 get_spectra.deredden(self.meta[sn]['target.mwebv'])
                 get_spectra.deredshift(self.meta[sn]['host.zhelio'])
                     
@@ -495,7 +496,21 @@ class build_spectral_data:
 #
 if __name__=="__main__":
 
-    bsd = build_spectral_data('data_input/SNF-0203-CABALLOv2/')
+    from optparse import OptionParser
+    # Options ==================================================================
+
+    usage = " usage: [%prog] [options] "
+    parser = OptionParser(usage, version="HEAD")
+
+    # Argument nights to process through the pipeline
+    parser.add_option("-i", "--idr", type=str,
+                      help="Top level directory of the IDR (ex. data_input/SNF-0203-CABALLOv2)")
+
+    opts, args = parser.parse_args()
+    if opts.idr is None:
+        parser.error("option -i is mandatory")
+
+    bsd = build_spectral_data(opts.idr)
     bsd.load_spectra()
     bsd.resampled_spectra(lmin=3200, lmax=8900, velocity=1500.)
     bsd.to_ab_mag()
