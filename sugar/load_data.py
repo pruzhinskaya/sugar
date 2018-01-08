@@ -10,8 +10,7 @@ path = os.path.dirname(sugar.__file__)
 class load_data_sugar:
     """function that allowed to access to observed sed and spectral features."""
 
-    def __init__(self, file_spectra=path + '/data_input/spectra_snia.pkl',
-                 file_at_max=path + '/data_input/spectra_and_si_at_max.pkl', mjd_cut=55250.):
+    def __init__(self, path_input = path + '/data_input/', mjd_cut=55250.):
         """
         Load all the data needed for training sugar.
 
@@ -21,8 +20,8 @@ class load_data_sugar:
         -spectra at max
         -spectal indicators at max
         """
-        self.file_spectra = file_spectra
-        self.file_at_max = file_at_max
+        self.file_spectra = os.path.join(path_input,'spectra_snia.pkl')
+        self.file_at_max = os.path.join(path_input,'spectra_and_si_at_max.pkl')
         self.mjd_cut = mjd_cut
 
         dic = cPickle.load(open(self.file_at_max))

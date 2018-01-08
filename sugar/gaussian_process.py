@@ -6,14 +6,16 @@ import sugar
 import cPickle
 import os
 
+path = os.path.dirname(sugar.__file__)
 
 class load_data_bin_gp:
     """load data for gp for one wavelength bin."""
-    def __init__(self):
+    def __init__(self, path_input = path + '/data_input/'):
         """
         create data used for gp for a given bin.
         """
-        self.lds = sugar.load_data_sugar()
+        self.path_input = path_input
+        self.lds = sugar.load_data_sugar(path_input=path_input)
         self.lds.load_spectra()
 
         self.wavelength = self.lds.spectra_wavelength[self.lds.sn_name[0]]['0']
@@ -69,8 +71,7 @@ class load_data_bin_gp:
         path = os.path.dirname(sugar.__file__)
         
         if hsiao_empca:
-            mean_file = path + '/data_input/mean_gaussian_process.dat'
-
+            mean_file = os.path.join(self.path_input, 'mean_gaussian_process.dat')
             data = np.loadtxt(mean_file)
             number_points = len(data[:,0]) / nnumber_bin
             y = np.zeros(number_points)
@@ -99,7 +100,7 @@ class load_data_bin_gp:
         path = os.path.dirname(sugar.__file__)
         
         if hsiao_empca:
-            mean_file = path + '/data_input/mean_gaussian_process.dat'
+            mean_file = os.path.join(self.path_input,'mean_gaussian_process.dat')
             data = np.loadtxt(mean_file)
         else:
             data = cPickle.load(open(path + '/data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl'))
@@ -148,7 +149,8 @@ class load_data_bin_gp:
 
 class gp_sed:
     """Interpolate snia sed using gaussian process."""
-    def __init__(self, grid_interpolation=np.linspace(-12,42,19),
+    def __init__(self, path_input = path + '/data_input/',
+                 grid_interpolation=np.linspace(-12,42,19),
                  svd_method=False, hsiao_empca=False):
         """
         Inteporlation of sed with gaussian process.
@@ -158,10 +160,11 @@ class gp_sed:
         hyperparameters in terms of wavelength by
         assuming no correlation in wavelength.
         """
+        self.path_input = path_input
         self.grid_interpolation = grid_interpolation
         self.svd_method = svd_method
 
-        self.ldbg = load_data_bin_gp()
+        self.ldbg = load_data_bin_gp(path_input=self.path_input)
         self.ldbg.build_difference_mean()
         self.sn_name = self.ldbg.sn_name
 
@@ -236,12 +239,11 @@ class gp_sed:
                                                   'time':gpr.new_binning,
                                                   'wavelength':self.wavelength[i]}})
 
-    def write_output(self):
+    def write_output(self, path_output = path + '/data_output/gaussian_process/'):
         """
         write output from gp interpolation.
         """
-        path = os.path.dirname(sugar.__file__)
-        output_directory = path + '/data_output/gaussian_process/'
+        output_directory = path_output
 
         fichier = open(output_directory+'sed_snia_gaussian_process.pkl','w')
         cPickle.dump(self.dic, fichier)
@@ -260,12 +262,9 @@ class gp_sed:
 
         gp_files.close()
 
-    def write_output_slow(self):
-        path = os.path.dirname(sugar.__file__)
-
         for sn in range(len(self.sn_name)):
             print sn+1,'/',len(self.sn_name)
-            fichier=open(path+'/data_output/gaussian_process/gp_predict/'+self.sn_name[sn]+'.predict','w')
+            fichier=open(output_directory + self.sn_name[sn] + '.predict','w')
             number_bin = len(self.dic[self.sn_name[sn]].keys())
             for Bin in range(number_bin):
                 dic = self.dic[self.sn_name[sn]]['bin%i'%(Bin)]
@@ -277,7 +276,7 @@ class gp_sed:
                             fichier.write('    %.5f \n'%(dic['covariance'][t,tt]))
                         else:
                             fichier.write('    %.5f'%(dic['covariance'][t,tt]))
-        fichier.close()
+            fichier.close()
 
 if __name__=="__main__":
 
@@ -286,5 +285,4 @@ if __name__=="__main__":
     gp = gp_sed(hsiao_empca=True)
     gp.gaussian_process_regression()
     gp.write_output()
-    gp.write_output_slow()
     B = time.time()

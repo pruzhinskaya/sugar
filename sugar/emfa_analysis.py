@@ -192,23 +192,22 @@ class emfa_si_analysis:
             self._iterative_filter(chi2emfa=True)
         self._em_fa(emfa_output_pkl,bic=bic)
 
-def run_emfa_analysis(output_file=None, sigma_clipping=False):
+def run_emfa_analysis(path_input, path_output, sigma_clipping=False):
 
 
-    snia = sugar.load_data_sugar()
+    snia = sugar.load_data_sugar(path_input=path_input)
     snia.load_spectral_indicator_at_max()
     
     si_analysis = emfa_si_analysis(snia.spectral_indicators,
                                    snia.spectral_indicators_error,
                                    snia.sn_name,missing_data=True)
 
-    if output_file is None:
-        path = os.path.dirname(sugar.__file__)
-        output_file = path + '/data_output/emfa_output.pkl'
+        
+    output_file = os.path.join(path_output,'emfa_output.pkl')
 
     si_analysis.emfa(output_file,sigma_clipping=sigma_clipping,
                      chi2emfa=True,bic=False)
 
 if __name__ == '__main__':
 
-    run_emfa_analysis(output_file=None, sigma_clipping=True)
+    run_emfa_analysis('data_input/','data_output/', sigma_clipping=True)
