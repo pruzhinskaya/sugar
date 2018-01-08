@@ -9,9 +9,6 @@ import pySnurp
 import os
 from ToolBox import Astro, Cosmology
 import scipy.interpolate as inter
-#import merged_spectrum as ms ## do the rebinning
-#import SnfMetaData # select training
-#import mpl_to_delate as mpl # remove by eye strange target
 
 
 class spec:
@@ -141,12 +138,6 @@ class build_spectral_data:
         self.dico_spectra = {}
         self.observed_wavelength = []
 
-        # E.G. Not neeed any more
-        #os.system('ln -s ' + self.idr_rep + 'training/ training')
-        #os.system('ln -s ' + self.idr_rep + 'validation/ validation')
-        #os.system('ln -s ' + self.idr_rep + 'bad/ bad')
-        #os.system('ln -s ' + self.idr_rep + 'auxiliary/ auxiliary')
-
         for i,sn in enumerate(self.sn_name):
             spec = {}
             ind = 0
@@ -169,11 +160,6 @@ class build_spectral_data:
                     self.observed_wavelength.append(get_spectra.x)
                     ind += 1
             self.dico_spectra.update({sn:spec})
-
-        os.system('rm -rf training')
-        os.system('rm -rf validation')
-        os.system('rm -rf bad')
-        os.system('rm -rf auxiliary')
 
     def resampled_spectra(self, lmin=3200, lmax=8900, velocity=1500.):
         """
@@ -302,52 +288,41 @@ class build_spectral_data:
 
         dico_spectra = {}
         for i, sn in enumerate(self.sn_name):
-            SPEC = copy.deepcopy(self.dico_spectra[sn])
-            if sn in sn_bad:
-                SPec = {}
-                PAUSE = []
-                IND = 0
-                for j in bad[sn].keys():
-                    PAUSE.append(bad[sn][j]['pause'])
-                for j in range(len(SPEC.keys())):
-                    if SPEC['%i'%(j)]['pause'] not in PAUSE:
-                        SPec.update({'%i'%(IND):SPEC['%i'%(j)]})
-                        IND+=1
-                dico_spectra.update({sn:SPec})
-            else:
-                dico_spectra.update({sn:SPEC})
+            if sn not in ['SN2005cg']:
+                SPEC = copy.deepcopy(self.dico_spectra[sn])
+                if sn in sn_bad:
+                    SPec = {}
+                    PAUSE = []
+                    IND = 0
+                    for j in bad[sn].keys():
+                        PAUSE.append(bad[sn][j]['pause'])
+                    for j in range(len(SPEC.keys())):
+                        if SPEC['%i'%(j)]['pause'] not in PAUSE:
+                            SPec.update({'%i'%(IND):SPEC['%i'%(j)]})
+                            IND+=1
+                    if len(SPec)>5:
+                        dico_spectra.update({sn:SPec})
+                else:
+                    dico_spectra.update({sn:SPEC})
 
         self.sn_name = dico_spectra.keys()
         self.dico_spectra = dico_spectra
 
-#    def select_night_in_previous_dico(self,dico_pkl):
-#        """
-#        Will take a pkl file in the same format as the output
-#        and remove spectra that don't match.
-#        """
-#        dic = cPickle.load(open(dico_pkl))#
-#
-#        sn_name = dic.keys()
-#        dico_spectra = {}
-#        for i,sn in enumerate(self.sn_name):
-#            print sn 
-#            if sn in sn_name:
-#                SPEC = copy.deepcopy(self.dic_cosmo[sn])
-#                SPec = {}
-#                PAUSE = []
-#                IND = 0
-#                for j in range(len(dic[sn].keys())):
-#                    PAUSE.append(dic[sn]['%i'%(j)]['pause'])
-#                for j in range(len(SPEC.keys())):
-#                    if SPEC['%i'%(j)]['pause'] in PAUSE:
-#                        SPec.update({'%i'%(IND):SPEC['%i'%(j)]})
-#                        IND+=1
-#                dico_spectra.update({sn:SPec})
-#                if len(SPec.keys())!=len(dic[sn].keys()):
-#                    print 'not ok'
-#
-#        self.sn_name = dic_spectra.keys()
-#        self.dico_spectra = dic_spectra
+    def control_plot(self):
+        import pylab as plt
+        for sn in self.dico_spectra.keys():
+            plt.figure()
+            cst = 0
+            for key in self.dico_spectra[sn].keys():
+                plt.plot(self.dico_spectra[sn][key]['X'],self.dico_spectra[sn][key]['Y']-cst,'b')
+                cst += 2.
+            plt.title(sn)
+            plt.gca().invert_yaxis()
+            plt.show()
+        
+        
+    
+        
 #
 #    def kill_Blue_runaway_eye_control(self):
 #        X=self.dic_cosmo['PTF09dlc']['0']['X']
@@ -413,109 +388,81 @@ class build_spectral_data:
 #
 #
 #
-#class build_at_max_data:
-#
-#    def __init__(self,dico_cosmo,phrenology):
-#
-#        self.Token_list=['EWCaIIHK','EWSiII4000','EWMgII','EWFe4800','EWSIIW','EWSiII5972','EWSiII6355','EWOI7773','EWCaIIIR','vSiII_4128_lbd','vSiII_5454_lbd','vSiII_5640_lbd','vSiII_6355_lbd']
-#        self.dic_cosmo=cPickle.load(open(dico_cosmo))
-#        self.phrenology=cPickle.load(open(phrenology))
-#        self.sn_name=self.dic_cosmo.keys()
-#        
-#    def select_spectra_at_max(self,RANGE=[-2.5,2.5]):
-#        self.dic_cosmo_at_max={}
-#
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#            PPhase=-999
-#            for j,pause in enumerate(self.dic_cosmo[sn].keys()):
-#                if abs(SPEC[pause]['phase_salt2'])<abs(PPhase):
-#                    spec=SPEC[pause]
-#                    PPhase=SPEC[pause]['phase_salt2']
-#            if PPhase>RANGE[0] and PPhase<RANGE[1]:
-#                self.dic_cosmo_at_max.update({sn:spec})
-#        self.sn_name=self.dic_cosmo_at_max.keys()
-#
-#    def select_spectral_indicators(self):
-#
-#        dic_cosmo_at_max={}
-#
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo_at_max[sn])
-#            spectral_indicators=[]
-#            spectral_indicators_error=[]
-#            for SI in range(len(self.Token_list)):
-#                PAUSE=SPEC['pause']
-#                spectral_indicators.append(self.phrenology[sn]['spectra'][PAUSE]['phrenology.'+self.Token_list[SI]])
-#                spectral_indicators_error.append(self.phrenology[sn]['spectra'][PAUSE]['phrenology.'+self.Token_list[SI]+'.err'])
-#            dic_sn={'spectra':SPEC,
-#                    'spectral_indicators':N.array(spectral_indicators),
-#                    'spectral_indicators_error':N.array(spectral_indicators_error)}
-#
-#            dic_cosmo_at_max.update({sn:dic_sn})
-#        
-#        self.dic_cosmo_at_max=dic_cosmo_at_max
-#
-#        
-#    def select_sn_list(self,sn_name):       
-#
-#        dic_cosmo_at_max={}
-#        for i,sn in enumerate(sn_name):
-#            if sn in self.sn_name:
-#                print '%i/%i'%(((i+1),len(sn_name)))
-#                SPEC=copy.deepcopy(self.dic_cosmo_at_max[sn])
-#                dic_cosmo_at_max.update({sn:SPEC})
-#
-#        self.sn_name=dic_cosmo_at_max.keys()
-#        self.dic_cosmo_at_max=dic_cosmo_at_max 
-#
-#
-#    def select_sn_in_good_sample(self,META,SAMPLE=['training']):
-#
-#        meta = SnfMetaData.SnfMetaData(META)
-#
-#        meta.add_filter(idr__subset__in = SAMPLE)
-#        sn_name=meta.targets('target.name',sort_by='target.name')
-#        dic_cosmo_at_max={}
-#        for i,sn in enumerate(sn_name):
-#            if sn in self.sn_name:
-#                print '%i/%i'%(((i+1),len(sn_name)))
-#                SPEC=copy.deepcopy(self.dic_cosmo_at_max[sn])
-#                dic_cosmo_at_max.update({sn:SPEC})
-#
-#        self.sn_name=dic_cosmo_at_max.keys()
-#        self.dic_cosmo_at_max=dic_cosmo_at_max
-#
-#    def write_pkl(self,pkl_name):
-#
-#        File=open(pkl_name,'w')
-#        cPickle.dump(self.dic_cosmo_at_max,File)
-#        File.close()
-#
+
+class build_at_max_data:
+
+    def __init__(self, dico_cosmo, phrenology):
+
+        self.si_list = ['EWCaIIHK', 'EWSiII4000', 'EWMgII',
+                           'EWFe4800', 'EWSIIW', 'EWSiII5972',
+                           'EWSiII6355', 'EWOI7773', 'EWCaIIIR',
+                           'vSiII_4128_lbd', 'vSiII_5454_lbd',
+                           'vSiII_5640_lbd', 'vSiII_6355_lbd']
+        self.dic_cosmo = cPickle.load(open(dico_cosmo))
+        self.phrenology = cPickle.load(open(phrenology))
+        self.sn_name = self.dic_cosmo.keys()
+        
+    def select_spectra_at_max(self, window=[-2.5, 2.5]):
+        
+        self.dic_cosmo_at_max = {}
+
+        for i,sn in enumerate(self.sn_name):
+            print '%i/%i'%(((i+1),len(self.sn_name)))
+            SPEC = copy.deepcopy(self.dic_cosmo[sn])
+            PPhase = -999
+            for j,pause in enumerate(self.dic_cosmo[sn].keys()):
+                if abs(SPEC[pause]['phase_salt2'])<abs(PPhase):
+                    spec=SPEC[pause]
+                    PPhase=SPEC[pause]['phase_salt2']
+            if PPhase>window[0] and PPhase<window[1]:
+                self.dic_cosmo_at_max.update({sn:spec})
+        self.sn_name=self.dic_cosmo_at_max.keys()
+
+
+    def select_spectral_indicators(self):
+
+        dic_cosmo_at_max = {}
+
+        for i,sn in enumerate(self.sn_name):
+            print '%i/%i'%(((i+1),len(self.sn_name)))
+            SPEC = copy.deepcopy(self.dic_cosmo_at_max[sn])
+            spectral_indicators = []
+            spectral_indicators_error = []
+            for SI in range(len(self.si_list)):
+                PAUSE = SPEC['pause']
+                spectral_indicators.append(self.phrenology[sn]['spectra'][PAUSE]['phrenology.'+self.si_list[SI]])
+                spectral_indicators_error.append(self.phrenology[sn]['spectra'][PAUSE]['phrenology.'+self.si_list[SI]+'.err'])
+            dic_sn = {'spectra':SPEC,
+                      'spectral_indicators':np.array(spectral_indicators),
+                      'spectral_indicators_error':np.array(spectral_indicators_error)}
+
+            dic_cosmo_at_max.update({sn:dic_sn})
+        
+        self.dic_cosmo_at_max = dic_cosmo_at_max
+
+        
+    def write_pkl(self,pkl_name):
+
+        File = open(pkl_name,'w')
+        cPickle.dump(self.dic_cosmo_at_max,File)
+        File.close()
+
+
 if __name__=="__main__":
 
-    from optparse import OptionParser
-    # Options ==================================================================
-
-    usage = " usage: [%prog] [options] "
-    parser = OptionParser(usage, version="HEAD")
-
-    # Argument nights to process through the pipeline
-    parser.add_option("-i", "--idr", type=str,
-                      help="Top level directory of the IDR (ex. data_input/SNF-0203-CABALLOv2)")
-
-    opts, args = parser.parse_args()
-    if opts.idr is None:
-        parser.error("option -i is mandatory")
-
-    bsd = build_spectral_data(opts.idr)
+    bsd = build_spectral_data('data_input/SNF-0203-CABALLOv2')
+    ##bsd = build_spectral_data('data_input/SNF-0203-CABALLO')
     bsd.load_spectra()
     bsd.resampled_spectra(lmin=3200, lmax=8900, velocity=1500.)
     bsd.to_ab_mag()
     bsd.cosmology_corrected()
     bsd.reorder_and_clean()
-    bsd.select_night_in_previous_dico('data_input/bad_spectra.pkl')
+    #bsd.select_night_in_previous_dico('data_input/bad_spectra.pkl')
     bsd.write_pkl('test_output.pkl')
+
+    bsd.control_plot()
     
+    #bmd = build_at_max_data('test_output.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
+    #bmd.select_spectra_at_max()
+    #bmd.select_spectral_indicators()
+    #bmd.write_pkl('test_output_si.pkl')

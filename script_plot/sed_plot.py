@@ -17,6 +17,7 @@ import sys,os,optparse
 from scipy.stats import norm as NORMAL_LAW
 import sugar
 import cosmogp
+import sncosmo
 
 class gp_interp:
 
@@ -492,7 +493,18 @@ class residual_plot:
             return Flux
 
         Time = N.linspace(-12,42,19)
-        time_movie = N.linspace(-6,42,200)
+
+        phaseee = N.array([self.dic[sn]['%i'%(j)]['phase_salt2'] for j in range(len(self.dic[sn].keys()))])
+        if N.min(phaseee)<-12:
+            minp = -12
+        else:
+            minp =  N.min(phaseee)
+        if N.max(phaseee)>42:
+            maxp = 42
+        else:
+            maxp = N.max(phaseee)
+                            
+        time_movie = N.linspace(int(minp),int(maxp),200)
 
         IND=None
         for i,SN in enumerate(self.sn_name):
@@ -505,17 +517,13 @@ class residual_plot:
         salt = []
         data = []
         
-        #for j in range(len(self.dic[sn].keys())):
-        #    days=self.dic[sn]['%i'%(j)]['phase_salt2']
-        #    if days>T_min and days<T_max:
-        #        DAYS.append(days)
-        #        if '%10.1f'%DAYS[-2]!='%10.1f'%DAYS[-1]:                    
-        #            YS=Astro.Coords.flbda2ABmag(self.dicSA[sn]['%i'%(j)]['X'],self.dicSA[sn]['%i'%(j)]['PF_flux'])
-        #            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
-        #            salt.append(YS)
-        #            wave_salt = self.dicSA[sn]['%i'%(j)]['X']
-        #            wave_data = self.dic[sn]['%i'%(j)]['X']
-        #            Phase.append(self.dic[sn]['%i'%(j)]['phase_salt2'])
+        for j in range(len(self.dic[sn].keys())):
+            days=self.dic[sn]['%i'%(j)]['phase_salt2']
+            if days>T_min and days<T_max:
+                DAYS.append(days)
+                if '%10.1f'%DAYS[-2]!='%10.1f'%DAYS[-1]:                    
+                    wave_data = self.dic[sn]['%i'%(j)]['X']
+                    Phase.append(self.dic[sn]['%i'%(j)]['phase_salt2'])
 
         data = N.zeros((19,190))
         gp_data = N.loadtxt('../sugar/data_output/gaussian_process_greg/gp_predict/' + sn + '.predict')
@@ -549,17 +557,27 @@ class residual_plot:
             DATA[:,Bin]+=SPLINE(time_movie)
             DATA[:,Bin] = go_to_flux(self.dic[sn]['0']['X'][Bin],DATA[:,Bin])
 
-        #for Bin in range(len(wave_salt)):
-        #    SPLINE=gp_interp(Phase,salt[:,Bin])
-        #    SALT[:,Bin]+=SPLINE.interpolate(time_movie)
-        #    SALT[:,Bin] = go_to_flux(wave_salt[Bin],SALT[:,Bin])
+        source_salt24 = sncosmo.SALT2Source(modeldir='../../2-4-0/data/salt2-4/')
+        model = sncosmo.Model(source=source_salt24)
+        meta = cPickle.load(open('../sugar/data_input/META_JLA.pkl'))
+
+        for T in range(len(time_movie)):
+            model.set(z=meta[sn]['host.zhelio'], t0=0.,
+                      x0=meta[sn]['salt2.X0'],
+                      x1=meta[sn]['salt2.X1'],
+                      c=meta[sn]['salt2.Color'])
+            wave = copy.deepcopy(wave_data)*(1+meta[sn]['host.zhelio'])
+            YS = model.flux(time_movie[T],wave)*(1+meta[sn]['host.zhelio'])**3
+            YS = Astro.Coords.flbda2ABmag(wave_data,YS)
+            YS+=-5.*N.log10(sugar.cosmology.luminosity_distance(self.dicSA[sn]['%i'%(j)]['z_helio'],self.dicSA[sn]['%i'%(j)]['z_cmb']))+5.
+            SALT[T] = go_to_flux(wave_data,YS)
 
         import matplotlib
         import matplotlib.pyplot as plt
         import matplotlib.animation as manimation
 
-        fig = plt.figure(figsize=(8,8))
-        plt.subplots_adjust(top=0.99,right=0.99,hspace=0,wspace=0)
+        fig = plt.figure(figsize=(12,8))
+        plt.subplots_adjust(left=0.07,top=0.99,right=0.99,hspace=0,wspace=0)
 
         FFMpegWriter = manimation.writers['ffmpeg']
         metadata = dict(title=sn, artist='Matplotlib',
@@ -570,8 +588,8 @@ class residual_plot:
         MIN = N.min(DATA)
         MAX = N.max(DATA)
 
-        #MMAX = N.max(DATA-SALT)
-        #MMIN = N.min(DATA-SALT)
+        MMAX = N.max(DATA-SALT)
+        MMIN = N.min(DATA-SALT)
 
         with writer.saving(fig, Name_mp4, 200):
             for i in range(len(time_movie)):
@@ -579,26 +597,26 @@ class residual_plot:
                 plt.subplot(2,1,1)
                 plt.cla()
                 plt.plot(wave_data,DATA[i],'k',lw=3,label=sn)
-                #plt.plot(wave_salt,SALT[i],'r',lw=3,label='SALT2.4')
+                plt.plot(wave_data,SALT[i],'r',lw=3,label='SALT2.4')
                 plt.plot(wave_data,SUGAR[i],'b',lw=3,label='SUGAR')
                 if abs(time_movie[i])>2:
-                    plt.text(4000,0.020,'%.2f days'%(time_movie[i]),fontsize=18)
+                    plt.text(5700,0.23,'%.2f days'%(time_movie[i]),fontsize=18)
                 else:
-                    plt.text(4000,0.020,'%.2f day'%(time_movie[i]),fontsize=18)
+                    plt.text(5700,0.23,'%.2f day'%(time_movie[i]),fontsize=18)
                 plt.xlim(3500,8500)
                 plt.xticks([],[])
                 plt.ylabel('Flux [erg s$^{-1}$ cm$^{-2}$ $\AA^{-1}$]',fontsize=18)
-                plt.ylim(MIN,0.024)
+                plt.ylim(MIN,MAX)
                 plt.legend()
                 #plt.gca().invert_yaxis()
                 plt.subplot(2,1,2)
                 plt.cla()
-                plt.plot(wave_data,DATA[i]/DATA[i],'k',lw=3)
-                plt.plot(wave_data,DATA[i]/SUGAR[i],'b',lw=3)
-                #plt.plot(wave_data,DATA[i]-SALT[i],'r',lw=3)
-                plt.ylim(0.5,1.48)
+                plt.plot(wave_data,DATA[i]-DATA[i],'k',lw=3)
+                plt.plot(wave_data,abs(DATA[i]-SUGAR[i]),'b',lw=3)
+                plt.plot(wave_data,abs(DATA[i]-SALT[i]),'r',lw=3)
+                plt.ylim(0.,0.053)
                 plt.xlim(3500,8500)
-                plt.ylabel(sn+'/SUGAR',fontsize=20)
+                plt.ylabel('|residual|',fontsize=20)
                 plt.xlabel(r'wavelength $[\AA]$', fontsize=20)
                 writer.grab_frame()
                 
@@ -853,15 +871,17 @@ if __name__=='__main__':
     
     rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
                        '../sugar/data_output/SUGAR_model_v1.asci',
-                       '../sugar/data_output/sugar_parameters_for_greg.pkl',
+                       '../sugar/data_output/sugar_parameters.pkl',
                        '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
                        dic_salt = '../sugar/data_input/file_pf_bis.pkl')
 
     
-    #sn = 'PTF09dnl'
+    ##sn = 'PTF09dnl'
+    sn = 'SN2008ec'
     #sn = 'SN2006X'
     #rp.plot_spectra_movie(sn)
-    sn = 'SN2012cu'
+    #sn = 'SN2012cu'
+    #for sn in dic.keys():
     rp.plot_spectra_movie(sn)
     
     #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)

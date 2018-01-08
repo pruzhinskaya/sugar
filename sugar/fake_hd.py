@@ -57,20 +57,20 @@ class fake_hd:
             z = np.linspace(0,np.max(self.zcmb),11)
             self.noise_bin = []
             self.noise = np.array(simu['error'])
-            for i in range(10):
-                A = []
-                for j in range(len(self.zcmb)):
-                    if self.zcmb[j]>z[i] and self.zcmb[j]<z[i+1]:
-                        A.append(self.noise[j])
-                self.noise_bin.append(np.mean(A))
+            #for i in range(10):
+            #    A = []
+            #    for j in range(len(self.zcmb)):
+            #        if self.zcmb[j]>z[i] and self.zcmb[j]<z[i+1]:
+            #            A.append(self.noise[j])
+            #    self.noise_bin.append(np.mean(A))
                 
             self.Mb = np.random.normal(loc=MB, scale=self.sigma_int, size=self.nsn)
-            self.noise = np.zeros(len(self.Mb))
-            for i in range(10):
-                for j in range(len(self.zcmb)):
-                    if self.zcmb[j]>z[i] and self.zcmb[j]<z[i+1]:
-                        self.noise[j] = np.random.normal(scale = self.noise_bin[i])
-            self.y_err = self.noise
+            #self.noise = np.zeros(len(self.Mb))
+            #for i in range(10):
+            for j in range(len(self.zcmb)):
+                self.noise_bin.append(np.random.normal(scale = self.noise[j]))
+    
+            self.y_err = np.array(self.noise_bin)
 
         self.Mb += self.y_err
         self.y_err = np.sqrt(self.y_err**2)
@@ -147,31 +147,29 @@ class fake_hd:
         plt.xlim(0.12,0.45)
         plt.ylabel('w',fontsize=18)
         plt.xlabel('$\Omega_m$',fontsize=18)
-                                                                    
-
 
     
 if __name__=='__main__':
 
-    fhh = fake_hd(0.15,omega_m=0.3,w=-1.,MB=-19.2,simple=True)
+    fhh = fake_hd(0.15,omega_m=0.3,w=-1.,MB=-19.2,simple=False)
     fhh.hubble_fit()
-    cx, cy, cz = fhh.conf_interval('om','w', 90)
+    cx, cy, cz = fhh.conf_interval('om','w', 60)
     #fhh.plot_contour()
 
-    fh = fake_hd(0.13,omega_m=0.3,w=-1.,MB=-19.2,simple=True)
+    fh = fake_hd(0.13,omega_m=0.3,w=-1.,MB=-19.2,simple=False)
     fh.hubble_fit()
-    cxx, cyy, czz = fh.conf_interval('om','w', 90)
+    cxx, cyy, czz = fh.conf_interval('om','w', 60)
 
-    plt.style.use('dark_background')
-    plt.figure(frameon=False)
-    ylim = plt.ylim(-1.4,-0.8)
-    xlim = plt.xlim(0.,0.40)
-    plt.plot([0.3,0.3],ylim,'w--',lw=3,zorder=0)
-    plt.plot(xlim,[-1,-1],'w--',lw=3,zorder=0)
+    #plt.style.use('dark_background')
+    #plt.figure(frameon=False)
+    ylim = plt.ylim(-2.0,-0.41)
+    xlim = plt.xlim(0.,0.45)
+    plt.plot([0.3,0.3],ylim,'k--',lw=3,zorder=0)
+    plt.plot(xlim,[-1,-1],'k--',lw=3,zorder=0)
     plt.contourf(cx, cy, Statistics.pvalue2sigma(1-cz), np.array([np.min(Statistics.pvalue2sigma(1-cz)),1.,2.]),cmap=plt.cm.Reds_r,vmin=1,alpha=0.8)
     plt.contourf(cxx, cyy, Statistics.pvalue2sigma(1-czz), np.array([np.min(Statistics.pvalue2sigma(1-czz)),1.,2.]),cmap=plt.cm.Blues_r,vmin=1,alpha=0.8)
-    plt.ylim(-1.4,-0.8)
-    plt.xlim(0.2,0.40)
+    plt.ylim(-1.45,-0.55)
+    plt.xlim(0.11,0.45)
     plt.ylabel('w',fontsize=18)
     plt.xlabel('$\Omega_m$',fontsize=18)
     p1 = plt.Rectangle((0, 0), 1, 1, fc="red")
