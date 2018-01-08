@@ -11,20 +11,21 @@ import os
 
 class load_data_to_build_sugar:
 
-    def __init__(self, pca_pkl=None, dic_at_max=None, rep_gp=None, filtre=True):
+    #def __init__(self, pca_pkl=None, dic_at_max=None, rep_gp=None, filtre=True):
+    def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', filtre=True):
 
-        assert pca_pkl is not None, 'I need a pkl file from emfa to start'
-        assert dic_at_max is not None, 'I need a pkl file from extinction fitting to start'
-        assert rep_gp is not None, 'I need a directory name from gaussian process to start'
+        #assert pca_pkl is not None, 'I need a pkl file from emfa to start'
+        #assert dic_at_max is not None, 'I need a pkl file from extinction fitting to start'
+        #assert rep_gp is not None, 'I need a directory name from gaussian process to start'
 
-        dicpca = cPickle.load(open(pca_pkl))
+        self.path_output = path_output
+        self.path_output_gp = path_output_gp
+
+        dicpca = cPickle.load(open(os.path.join(self.path_output,'emfa_3_sigma_clipping.pkl')))
         pca_sn_name=np.array(dicpca['sn_name'])
 
         if filtre:
             FILTRE = dicpca['filter']
-            #for i in range(len(pca_sn_name)):
-            #    if pca_sn_name[i] in ['SNF20080905-005','SNF20070403-000', 'SNF20080919-002']:
-            #        FILTRE[i] = False
         else:
             FILTRE = np.array([True]*len(pca_sn_name))
 
@@ -37,12 +38,12 @@ class load_data_to_build_sugar:
         self.pca_Norm_err = dicpca['Norm_err'][FILTRE]
         self.sn_name = pca_sn_name[FILTRE]
 
-        dic_model=cPickle.load(open(dic_at_max))
+        dic_model=cPickle.load(open(os.path.join(self.path_output,'sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')))
         self.sn_name_Av = dic_model['sn_name']
         self.Av = dic_model['Av_cardelli']
         self.Rv = dic_model['RV']
         
-        self.rep_GP = rep_gp
+        self.rep_GP = self.path_output_gp
 
         self.N_sn = len(self.sn_name)
 
@@ -122,9 +123,9 @@ class load_data_to_build_sugar:
 
 class make_sugar(load_data_to_build_sugar):
 
-    def __init__(self, pca, dic_at_max, rep_gp, filtre=True):
+    def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', filtre=True):
 
-        load_data_to_build_sugar.__init__(self, pca_pkl=pca, dic_at_max=dic_at_max, rep_gp=rep_gp, filtre=filtre)
+        load_data_to_build_sugar.__init__(self, path_output=path_output, path_output_gp=path_output_gp, filtre=filtre)
         self.compute_EM_PCA_data()
         self.load_spectra()
 
@@ -145,12 +146,9 @@ class make_sugar(load_data_to_build_sugar):
         self.sedfit.run_fit()
         self.sedfit.separate_component()
         
-    def write_model_output(self,pkl=None):
+    def write_model_output(self):
 
-        if pkl is None:
-            path = os.path.dirname(sugar.__file__)
-            pkl = path + '/data_output/sugar_model.pkl'
-            
+        pkl = os.path.join(self.path_output,'sugar_model.pkl')
 
         dic = {'alpha':self.sedfit.alpha,
                'm0':self.sedfit.m0,
@@ -168,10 +166,10 @@ class make_sugar(load_data_to_build_sugar):
 
 if __name__ == '__main__':
 
-    pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
-    gp = 'data_output/gaussian_process/gp_predict/'
-    max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
+    #pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
+    #gp = 'data_output/gaussian_process/gp_predict/'
+    #max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
 
-    ld = make_sugar(pca, max_light, gp, filtre=True)
+    ld = make_sugar()
     ld.launch_sed_fitting()
     ld.write_model_output()
