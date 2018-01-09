@@ -68,7 +68,7 @@ solver.converge(nvec,niter)
         self.ILPL = N.zeros((self.nobs, self.nvec, self.nvec))
         self.ILPLm1 = N.zeros((self.nobs, self.nvec, self.nvec))
 
-        if Lambda_init == None:
+        if Lambda_init is None:
             # self.Lambda=N.eye(self.nvar,self.nvec)
             # some heuristic to find suitable starting value :
             # Set LLt to XXt
@@ -394,12 +394,12 @@ solver.converge(nvec,niter)
 
         self.verbose = verbose
 
-        if solve_Psi0 == True:
+        if solve_Psi0:
             self.Psi0 = N.zeros(self.nvar)
 
         self.init_lambda(nvec, Lambda_init)
 
-        if solve_Psi0 == True:
+        if solve_Psi0:
             self.solve_Psi0()
 
         Lambda_0 = None
@@ -427,22 +427,22 @@ solver.converge(nvec,niter)
             # M-step
             old_log_L = log_L
             self.solve_Lambda()
-            if solve_Psi0 != False:
+            if solve_Psi0:
                 self.solve_Psi0()
 
             Lambda_after_solve = copy.copy(self.Lambda)
 
-            if accelerate == True and Lambda_0 != None:
+            if accelerate and Lambda_0 is not None:
                 dLambda = self.Lambda - Lambda_0
                 self.accelerate_Lambda(dLambda, "Delta L")
                 Lambda_0 = None
             else:
                 Lambda_0 = copy.copy(self.Lambda)
 
-            if gradient == True:
+            if gradient:
                 self.accelerate_Lambda(self.grad_log_likelihood(), "Gradient")
 
-            if renorm == True:
+            if renorm:
                 self.normalize_Lambda()
 
 
