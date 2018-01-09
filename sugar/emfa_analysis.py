@@ -83,7 +83,7 @@ class emfa_si_analysis:
         
 
     def _Norm_varr(self,Filter=None):
-        if Filter != None :
+        if Filter is not None :
             norm = np.sqrt(np.var(self.data_center[Filter].T,axis=1))
         else:
             norm = np.sqrt(np.var(self.data_center.T,axis=1))
