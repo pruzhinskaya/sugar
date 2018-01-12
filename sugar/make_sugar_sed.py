@@ -11,18 +11,13 @@ import os
 
 class load_data_to_build_sugar:
 
-    #def __init__(self, pca_pkl=None, dic_at_max=None, rep_gp=None, filtre=True):
     def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', filtre=True):
-
-        #assert pca_pkl is not None, 'I need a pkl file from emfa to start'
-        #assert dic_at_max is not None, 'I need a pkl file from extinction fitting to start'
-        #assert rep_gp is not None, 'I need a directory name from gaussian process to start'
 
         self.path_output = path_output
         self.path_output_gp = path_output_gp
 
         dicpca = cPickle.load(open(os.path.join(self.path_output,'emfa_3_sigma_clipping.pkl')))
-        pca_sn_name=np.array(dicpca['sn_name'])
+        pca_sn_name = np.array(dicpca['sn_name'])
 
         if filtre:
             FILTRE = dicpca['filter']
@@ -165,10 +160,6 @@ class make_sugar(load_data_to_build_sugar):
         
 
 if __name__ == '__main__':
-
-    #pca = 'data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl'
-    #gp = 'data_output/gaussian_process/gp_predict/'
-    #max_light = 'data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
 
     ld = make_sugar()
     ld.launch_sed_fitting()

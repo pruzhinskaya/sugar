@@ -73,15 +73,11 @@ def go_to_flux(X, Y, ABmag0=48.59):
     Flux_lambda = Flux_nu/f
     return Flux_lambda
 
-def check_bounds(X, lmin, lmax, step=10.):
+def check_bounds(X):
     """check the bounds."""
     spec_min = max([np.min(X[sn]) for sn in range(len(X))])
     spec_max = min([np.max(X[sn]) for sn in range(len(X))])
-    if spec_min > lmin:
-        lmin = spec_min
-    if spec_max < lmax+step:
-        lmax = spec_max-step
-    return lmin, lmax
+    return spec_min, spec_max
 
 class build_spectral_data:
     """
@@ -138,15 +134,26 @@ class build_spectral_data:
         self.dico_spectra = {}
         self.observed_wavelength = []
 
+        min_wavelength = [] 
+        max_wavelength = []
         for i,sn in enumerate(self.sn_name):
             spec = {}
             ind = 0
             for j,pause in enumerate(self.meta[sn]['spectra'].keys()):
                 get_spectra = pySnurp.Spectrum(os.path.join(self.idr_rep,self.meta[sn]['spectra'][pause]['idr.spec_merged']))
+
                 get_spectra.deredden(self.meta[sn]['target.mwebv'])
                 get_spectra.deredshift(self.meta[sn]['host.zhelio'])
-                    
-                if len(get_spectra.x) == 2691: #R and B channel alive
+
+                spectra_ok = (len(get_spectra.x) == 2691)
+                if 'procB.Quality' in self.meta[sn]['spectra'][pause].keys():
+                    spectra_ok = (spectra_ok & (self.meta[sn]['spectra'][pause]['procB.Quality'] == 1))
+                if 'procR.Quality' in self.meta[sn]['spectra'][pause].keys():
+                    spectra_ok = (spectra_ok & (self.meta[sn]['spectra'][pause]['procR.Quality'] == 1))
+                
+                if spectra_ok: #R and B channel alive and flag quality ok within both chanel.
+                    min_wavelength.append(min(get_spectra.x))
+                    max_wavelength.append(max(get_spectra.x))
                     spec.update({'%i'%(ind):{'Y': get_spectra.y,
                                              'X': get_spectra.x,
                                              'V': get_spectra.v,
@@ -161,14 +168,15 @@ class build_spectral_data:
                     ind += 1
             self.dico_spectra.update({sn:spec})
 
-    def resampled_spectra(self, lmin=3200, lmax=8900, velocity=1500.):
+
+    def resampled_spectra(self, velocity=1500.):
         """
         Resample spectra on the same grid.
         Sampled in velocity.
         """
         delta_lambda = velocity / 3.e5
         dico_spectra = {}
-        lmin, lmax = check_bounds(self.observed_wavelength,lmin,lmax)
+        lmin, lmax = check_bounds(self.observed_wavelength)
         rebinarray = [lmin]
         i = 0
         while rebinarray[i]<lmax:
@@ -233,7 +241,7 @@ class build_spectral_data:
 
     def reorder_and_clean(self):
         """
-        Reorder each SNIa spectra by incrasing phasing and clean from neagtive flux.
+        Reorder each SNIa spectra by incrasing phasing and put infinite weight for negative flux.
         """
         dic_spectra = {}
         for i,sn in enumerate(self.sn_name):
@@ -250,65 +258,25 @@ class build_spectral_data:
                         minimum = phase
                         ind = pause
                 if np.sum(np.isfinite(spectra[ind]['Y'])) == len(spectra[ind]['Y']):
-                    spectra[ind]['Y'] = spectra[ind]['Y'][(spectra[ind]['X']>3340.)]
-                    spectra[ind]['V'] = spectra[ind]['V'][(spectra[ind]['X']>3340.)]
-                    spectra[ind]['Y_flux'] = spectra[ind]['Y_flux'][(spectra[ind]['X']>3340.)]
-                    spectra[ind]['V_flux'] = spectra[ind]['V_flux'][(spectra[ind]['X']>3340.)]
-                    spectra[ind]['X'] = spectra[ind]['X'][(spectra[ind]['X']>3340.)]
                     spec.update({'%i'%(ind_new):copy.deepcopy(spectra[ind])})
                     ind_new += 1
                 else:
-                    delta = abs(np.sum(np.isfinite(spectra[ind]['Y']))-len(spectra[ind]['Y']))
-                    if delta < 100:
-                        filtre = np.isfinite(spectra[ind]['Y'])
-                        spline = inter.InterpolatedUnivariateSpline(spectra[ind]['X'][filtre],spectra[ind]['Y'][filtre])
-                        spectra[ind]['Y'][~filtre] = spline(spectra[ind]['X'][~filtre])
-                        spectra[ind]['V'][~filtre] = 100.
-                        spectra[ind]['Y'] = spectra[ind]['Y'][(spectra[ind]['X']>3340.)]
-                        spectra[ind]['V'] = spectra[ind]['V'][(spectra[ind]['X']>3340.)]
-                        spectra[ind]['Y_flux'] = spectra[ind]['Y_flux'][(spectra[ind]['X']>3340.)]
-                        spectra[ind]['V_flux'] = spectra[ind]['V_flux'][(spectra[ind]['X']>3340.)]
-                        spectra[ind]['X'] = spectra[ind]['X'][(spectra[ind]['X']>3340.)]
-                        spec.update({'%i'%(ind_new):copy.deepcopy(spectra[ind])})
-                        ind_new += 1
+                    filtre = np.isfinite(spectra[ind]['Y'])
+                    spectra[ind]['Y'][~filtre] = np.average(spectra[ind]['Y'][filtre], weights=1./spectra[ind]['V'][filtre])
+                    spectra[ind]['V'][~filtre] = 100.
+                    spec.update({'%i'%(ind_new):copy.deepcopy(spectra[ind])})
+                    ind_new += 1
 
                 del spectra[ind]
 
             dic_spectra.update({sn:spec})
 
         self.dico_spectra = dic_spectra
-
-    def select_night_in_previous_dico(self,bad_spectra_pkl):
-        """
-        Will take a pkl file in the same format as the output
-        and remove spectra that don't match.
-        """
-        bad = cPickle.load(open(bad_spectra_pkl))
-        sn_bad = bad.keys()
-
-        dico_spectra = {}
-        for i, sn in enumerate(self.sn_name):
-            if sn not in ['SN2005cg']:
-                SPEC = copy.deepcopy(self.dico_spectra[sn])
-                if sn in sn_bad:
-                    SPec = {}
-                    PAUSE = []
-                    IND = 0
-                    for j in bad[sn].keys():
-                        PAUSE.append(bad[sn][j]['pause'])
-                    for j in range(len(SPEC.keys())):
-                        if SPEC['%i'%(j)]['pause'] not in PAUSE:
-                            SPec.update({'%i'%(IND):SPEC['%i'%(j)]})
-                            IND+=1
-                    if len(SPec)>5:
-                        dico_spectra.update({sn:SPec})
-                else:
-                    dico_spectra.update({sn:SPEC})
-
-        self.sn_name = dico_spectra.keys()
-        self.dico_spectra = dico_spectra
-
+        
     def control_plot(self):
+        """
+        Display all spectal time series.
+        """
         import pylab as plt
         for sn in self.dico_spectra.keys():
             plt.figure()
@@ -319,91 +287,24 @@ class build_spectral_data:
             plt.title(sn)
             plt.gca().invert_yaxis()
             plt.show()
-        
-        
-    
-        
-#
-#    def kill_Blue_runaway_eye_control(self):
-#        X=self.dic_cosmo['PTF09dlc']['0']['X']
-#        dic_cosmo={}
-#        dic_bad={}
-#        self.BAD=True
-#        for i,sn in enumerate(self.sn_name):
-#            print '%i/%i'%(((i+1),len(self.sn_name)))
-#            SPEC=copy.deepcopy(self.dic_cosmo[sn])
-#            OFFSET=[]
-#
-#            P.figure()
-#            indice_spec=[]
-#            Wave=[]
-#            Flux=[]
-#            for j in range(len(self.dic_cosmo[sn].keys())):
-#                OFFSET.append(j+0.2+15)
-#                indice_spec.append(j)
-#                Wave.append(SPEC['%i'%(j)]['X'][60])
-#                Flux.append(SPEC['%i'%(j)]['Y'][60]+OFFSET[j])
-#
-#                P.plot(SPEC['%i'%(j)]['X'],SPEC['%i'%(j)]['Y']+OFFSET[j],'k')
-#                moins=SPEC['%i'%(j)]['Y']+OFFSET[j]-N.sqrt(SPEC['%i'%(j)]['V'])
-#                plus=SPEC['%i'%(j)]['Y']+OFFSET[j]+N.sqrt(SPEC['%i'%(j)]['V'])
-#                P.fill_between(SPEC['%i'%(j)]['X'],moins,plus,color='k',alpha=0.5 )
-#                
-#            indice_spec=N.array(indice_spec)
-#            Wave=N.array(Wave)
-#            Flux=N.array(Flux)
-#            
-#            scat=P.scatter(Wave,Flux,s=50,c='b')
-#            browser=mpl.PointBrowser_TO_DELATE(Wave,Flux,indice_spec,scat)
-#            P.title(sn)
-#            P.ylabel('Mag AB + cst')
-#            P.xlabel('wavelength [$\AA$]')
-#            P.gca().invert_yaxis()
-#            
-#            P.show()
-#            
-#
-#            if len(browser.LIST_TO_DELATE) == 0 :
-#                spec=SPEC
-#            
-#            else:
-#                spec={}
-#                spec_bad={}
-#                Ind=0
-#
-#                for j in range(len(self.dic_cosmo[sn].keys())):
-#                    if j in browser.LIST_TO_DELATE:
-#                        print 'au revoir'
-#                        spec_bad.update({SPEC['%i'%j]['pause']:SPEC['%i'%j]})
-#                    else:
-#                        spec.update({'%i'%(Ind):copy.deepcopy(SPEC['%i'%j])})
-#                        Ind+=1
-#                    del SPEC['%i'%(j)]
-#                dic_bad.update({sn:spec_bad})
-#            dic_cosmo.update({sn:spec})
-#
-#
-#        self.dic_cosmo=dic_cosmo
-#        self.dic_bad=dic_bad
-#
-#
-#
+
 
 class build_at_max_data:
 
     def __init__(self, dico_cosmo, phrenology):
-
         self.si_list = ['EWCaIIHK', 'EWSiII4000', 'EWMgII',
-                           'EWFe4800', 'EWSIIW', 'EWSiII5972',
-                           'EWSiII6355', 'EWOI7773', 'EWCaIIIR',
-                           'vSiII_4128_lbd', 'vSiII_5454_lbd',
-                           'vSiII_5640_lbd', 'vSiII_6355_lbd']
+                        'EWFe4800', 'EWSIIW', 'EWSiII5972',
+                        'EWSiII6355', 'EWOI7773', 'EWCaIIIR',
+                        'vSiII_4128_lbd', 'vSiII_5454_lbd',
+                        'vSiII_5640_lbd', 'vSiII_6355_lbd']
         self.dic_cosmo = cPickle.load(open(dico_cosmo))
         self.phrenology = cPickle.load(open(phrenology))
         self.sn_name = self.dic_cosmo.keys()
         
-    def select_spectra_at_max(self, window=[-2.5, 2.5]):
-        
+    def select_spectra_at_max(self, window = [-2.5, 2.5]):
+        """
+        Select spectrum closest to max within the define time window.
+        """
         self.dic_cosmo_at_max = {}
 
         for i,sn in enumerate(self.sn_name):
@@ -420,7 +321,12 @@ class build_at_max_data:
 
 
     def select_spectral_indicators(self):
+        """
+        Select spectral indicators closest to max.
 
+        The spectra where the spectral indicators
+        were computed, come from the select_spectra_at_max(). 
+        """
         dic_cosmo_at_max = {}
 
         for i,sn in enumerate(self.sn_name):
@@ -440,9 +346,10 @@ class build_at_max_data:
         
         self.dic_cosmo_at_max = dic_cosmo_at_max
 
-        
     def write_pkl(self,pkl_name):
-
+        """
+        Write the output.
+        """
         File = open(pkl_name,'w')
         cPickle.dump(self.dic_cosmo_at_max,File)
         File.close()
@@ -451,18 +358,15 @@ class build_at_max_data:
 if __name__=="__main__":
 
     bsd = build_spectral_data('data_input/SNF-0203-CABALLOv2')
-    ##bsd = build_spectral_data('data_input/SNF-0203-CABALLO')
     bsd.load_spectra()
-    bsd.resampled_spectra(lmin=3200, lmax=8900, velocity=1500.)
+    bsd.resampled_spectra(velocity=1500.)
     bsd.to_ab_mag()
     bsd.cosmology_corrected()
     bsd.reorder_and_clean()
-    #bsd.select_night_in_previous_dico('data_input/bad_spectra.pkl')
     bsd.write_pkl('test_output.pkl')
-
     bsd.control_plot()
-    
-    #bmd = build_at_max_data('test_output.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
-    #bmd.select_spectra_at_max()
-    #bmd.select_spectral_indicators()
-    #bmd.write_pkl('test_output_si.pkl')
+
+    bmd = build_at_max_data('test_output.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
+    bmd.select_spectra_at_max()
+    bmd.select_spectral_indicators()
+    bmd.write_pkl('test_output_si.pkl')
