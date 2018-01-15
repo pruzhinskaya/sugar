@@ -263,10 +263,14 @@ class sugar_fitting:
     def __init__(self, x, y, covx, covy,
                  wavelength, size_bloc=None,
                  fit_grey=False, fit_gamma=False,
+                 fit_disp_matrix=False,
                  sparse=False, control=False):
 
         self.fit_grey = fit_grey
         self.fit_gamma = fit_gamma
+        self.fit_disp_matrix = fit_disp_matrix
+        if self.fit_disp_matrix:
+            self.covy = covy
 
         if fit_grey and fit_gamma:
             raise ValueError("Can not fit for the momment gamma and grey offset at the same time.")
@@ -301,7 +305,7 @@ class sugar_fitting:
         self.x = np.zeros((self.nsn,self.ncomp+1))
         self.x[:,0] = 1
         self.x[:,(1+self.grey+self.color):] = self._x
-        
+
         self.wx = np.zeros((self.nsn,self.ncomp,self.ncomp))
         self.dy = np.zeros((self.nsn,self.nbin))
         self.wy = []
@@ -328,9 +332,11 @@ class sugar_fitting:
         self.alpha = np.ones((self.nbin,self.ncomp))
         self.m0 = np.zeros(self.nbin)
         self.delta_m_grey = np.zeros(self.nsn)
+        
         self.a_lambda0 = np.zeros(self.nsn)
         self.gamma_lambda = np.zeros(self.nbin)
-
+        self.disp_matrix = 0
+        
         self.A[:,0]=self.m0
         self.A[:,1:]=self.alpha
 
@@ -502,7 +508,6 @@ class sugar_fitting:
             self.alpha[:,ncomp] += self.add_cst_xplus[ncomp]
         self.merge_component()
 
-
     def m_step(self):
 
         if self.size_bloc is None:
@@ -581,8 +586,123 @@ class sugar_fitting:
                 
         self.A[:,self.filter_grey]=new_slopes
 
+
+    # TO DO : chi2 C11
+    def comp_chi2_c11(self):
+        if self.sparse:
+            raise ValueError('numpy array is needed for this fonction')
+        residuals = []
+        self.wyc11 = []
+        self.covyc11 = copy.deepcopy(self.covy)
+
+        chi2 = 0.
+
+        self.separate_component()
+
+        for sn in range(self.nsn):
+            residuals.append(np.array(self.y[sn] - np.dot(self.A,np.matrix(self.x[sn]).T).T)[0])
+            self.covyc11[sn] += np.dot(self.alpha, np.dot(self.covx[sn], self.alpha.T))
+            self.wyc11.append(np.linalg.inv(self.covyc11[sn]+self.disp_matrix))
+            chi2 += np.dot(np.matrix(residuals[sn]),np.dot(self.wyc11[sn],np.matrix(residuals[sn]).T))
+
+        self.wyc11 = np.array(self.wyc11)
+        self.covyc11 = np.array(self.covyc11)
+
+        self.residualsc11 = np.array(residuals)
+        self.chi2_c11 = sum(chi2)
+
+        
+    def measured_dispersion_matrix(self):
+        if self.sparse:
+            raise ValueError('numpy array is needed for this fonction')
+
+        sum_cov = np.sum(self.covyc11, axis=0)
+        measured_matrix = ( np.dot(self.residualsc11.T, self.residualsc11) - sum_cov ) /len(self.residualsc11)
+        # remove negative values from the matrix
+        valps, vecps = np.linalg.eig(measured_matrix)
+        # Solve for numerical blow-up
+        valps = np.real(valps)
+        vecps = np.real(vecps)
+        valps[np.nonzero(valps<0)] = [0] * len(valps[np.nonzero(valps<0)])
+        return np.dot(np.dot(vecps,np.diag(valps)),vecps.T)
     
-    def run_fit(self, maxiter=10000):
+    def _comp_REML_approx(self):
+        """
+        computes 2* log*REML wher REML stands for restricted maximum likelihood.
+        """
+        if self.sparse:
+            raise ValueError('numpy array is needed for this fonction')
+        reml = 0.
+        for sn in range(self.nsn):
+            residuals = (self.residualsc11[sn])
+            reml += np.dot(np.matrix(residuals),np.dot(self.wyc11[sn],np.matrix(residuals).T))
+            # the determinant blows up for large matrices, so go to decomposition
+            valps = np.linalg.eigvals(self.wyc11[sn])
+            reml += -np.sum(np.log(valps[np.nonzero(valps>0)]))
+        return reml
+
+    def build_dispersion_matrix(self, max_iter=150):
+        if self.sparse:
+            raise ValueError('numpy array is needed for this fonction')
+
+        self.comp_chi2_c11()
+        
+        controle_reml = 0
+        n = 0
+        REML_old = np.inf
+        REML=self._comp_REML_approx()
+        REMLs = [REML_old,REML]
+        REML_save = []
+
+        REML_save.append(REML)
+
+        A_copy = copy.deepcopy(self.A)
+        disp_copy = copy.deepcopy(self.disp_matrix)
+        h_copy = copy.deepcopy(self.h)
+        print "\nCurrent REML:"
+        while ( np.abs(REML-REML_old)>0.001 ) and n<=2:
+            print n, REML
+
+            self.disp_matrix = self.measured_dispersion_matrix()
+            self.reload_wy()
+            self.run_fit(maxiter=1, not_build_disp=False)
+            self.comp_chi2_c11()
+            REML_old = REML
+            REML = self._comp_REML_approx()
+                              
+            if REML<min(REML_save):
+                print 'REML now is lower than previous REML'
+                A_copy=copy.deepcopy(self.A)
+                disp_copy=copy.deepcopy(self.disp_matrix)
+                h_copy=copy.deepcopy(self.h)
+
+            REML_save.append(REML)
+
+            if np.abs(REML-REMLs[-2])<0.00001: n+=1
+            REMLs.append(REML)
+
+            controle_reml+=1
+            if controle_reml>max_iter:
+                break
+
+            if np.abs(REML-REMLs[-2])<0.00001: n+=1
+            REMLs.append(REML)
+
+        self.run_fit(maxiter=1, not_build_disp=False)
+        self.comp_chi2_c11()
+
+        REML=self._comp_REML_approx()
+        REML_save.append(REML)
+        print REML
+          
+    def reload_wy(self):
+        if self.sparse:
+            raise ValueError('numpy array is needed for this fonction')
+        for sn in range(self.nsn): 
+            self.wy[sn] = np.linalg.inv(self.covy[sn] + self.disp_matrix) 
+
+#    def run_fit(self, maxiter=10000, not_build_disp=True):
+    def run_fit(self, maxiter=100, not_build_disp=True):
 
         self.chi2_save = []
         self.comp_chi2()
@@ -612,7 +732,9 @@ class sugar_fitting:
             i += 1
             if i>maxiter:
                 break
-        
+
+        if self.fit_disp_matrix and not_build_disp:
+            self.build_dispersion_matrix(max_iter=150)
 
     def separate_component(self):
 
