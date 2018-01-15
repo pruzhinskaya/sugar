@@ -258,16 +258,19 @@ class multilinearfit:
 class sugar_fitting:
     """
     sed fitting.
-
     TO DO
     """
-
-    def __init__(self,x, y, covx, covy,
+    def __init__(self, x, y, covx, covy,
                  wavelength, size_bloc=None,
-                 fit_grey=False,sparse=False,
-                 control=False):
+                 fit_grey=False, fit_gamma=False,
+                 sparse=False, control=False):
 
         self.fit_grey = fit_grey
+        self.fit_gamma = fit_gamma
+
+        if fit_grey and fit_gamma:
+            raise ValueError("Can not fit for the momment gamma and grey offset at the same time.")
+
         self.size_bloc = size_bloc
         self.sparse = sparse
         if self.sparse:
@@ -275,18 +278,20 @@ class sugar_fitting:
         if self.size_bloc is not None:
             assert len(y[0])%self.size_bloc == 0, 'size_bloc should be able to divide len(y[0])'    
         self.control = control
-            
+
         self._x = x
         self._h = copy.deepcopy(self._x)
         self.y = y
+        self.wavelength = wavelength
         self.covx = covx
 
         self.nsn = len(self.y[:,0])
         self.grey = 1 if self.fit_grey else 0
-        self.ncomp = len(self._x[0]) + self.grey
-        self.nslopes = len(self._x[0]) + 1
+        self.color = 1 if self.fit_gamma else 0
+        self.ncomp = len(self._x[0]) + self.grey + self.color
+        self.nslopes = len(self._x[0]) + 1 + self.color
         self.nbin = len(self.y[0])
-        self.dof = (self.nsn*self.nbin) - (self.nbin*(self.nslopes)) - self.grey*self.nsn
+        self.dof = (self.nsn*self.nbin) - (self.nbin*(self.nslopes)) - self.grey*self.nsn - self.color*self.nsn
 
         self.filter_grey = np.array([True]*(self.ncomp+1))
         if self.fit_grey:
@@ -295,7 +300,7 @@ class sugar_fitting:
         # the one is for the mean spectrum        
         self.x = np.zeros((self.nsn,self.ncomp+1))
         self.x[:,0] = 1
-        self.x[:,(1+self.grey):] = self._x
+        self.x[:,(1+self.grey+self.color):] = self._x
         
         self.wx = np.zeros((self.nsn,self.ncomp,self.ncomp))
         self.dy = np.zeros((self.nsn,self.nbin))
@@ -303,7 +308,7 @@ class sugar_fitting:
         self.wwy = []
 
         for sn in range(self.nsn):
-            self.wx[:,(self.grey):,(self.grey):][sn] = np.linalg.inv(self.covx[sn])
+            self.wx[:,(self.grey+self.color):,(self.grey+self.color):][sn] = np.linalg.inv(self.covx[sn])
             if not self.sparse:
                 self.wy.append(np.linalg.inv(covy[sn]))
                 self.dy[sn] = np.sqrt(np.diag(covy[sn]))
@@ -323,6 +328,8 @@ class sugar_fitting:
         self.alpha = np.ones((self.nbin,self.ncomp))
         self.m0 = np.zeros(self.nbin)
         self.delta_m_grey = np.zeros(self.nsn)
+        self.a_lambda0 = np.zeros(self.nsn)
+        self.gamma_lambda = np.zeros(self.nbin)
 
         self.A[:,0]=self.m0
         self.A[:,1:]=self.alpha
@@ -330,12 +337,12 @@ class sugar_fitting:
         self.chi2 = None
         self.chi2_save = None
 
-    def init_fit(self, alpha=None, M0=None, delta_m_grey=None):
+    def init_fit(self, alpha=None, M0=None, delta_m_grey=None, a_lambda0=None, gamma_lambda=None):
         
         self.separate_component()
 
         if alpha is not None:
-           self.alpha = alpha 
+           self.alpha = alpha
         
         for Bin in range(self.nbin):
             print Bin+1,'/',self.nbin
@@ -348,7 +355,24 @@ class sugar_fitting:
             self.m0 = M0
 
         if delta_m_grey is not None:
-            self.delta_m_grey = delta_m_grey
+            if not self.fit_grey:
+                raise ValueError("should set the init with option fit_grey=True")
+            else:
+                self.delta_m_grey = delta_m_grey
+
+        if a_lambda0 is not None:
+            if not self.fit_gamma:
+                raise ValueError("should set the init with option fit_gamma=True")
+            else:
+                self.a_lambda0 = a_lambda0
+
+        if gamma_lambda is not None:
+            if not self.fit_gamma:
+                raise ValueError("should set the init with option fit_gamma=True")
+            else:
+                self.gamma_lambda = gamma_lambda
+        else:
+            self.gamma_lambda = sugar.extinctionLaw(self.wavelength, Rv=3.1)
         
         self.merge_component()
                                                                                       
@@ -368,7 +392,8 @@ class sugar_fitting:
     def e_step(self):
         """
         Compute the true value of the data,
-        and the grey offset
+        the grey offset (if fit_grey is True),
+        and the a_lambda0 (if fit_gamma is True).
         """
         A=np.zeros(np.shape(self.wx))
         B=np.zeros((self.nsn,self.ncomp))
@@ -388,6 +413,32 @@ class sugar_fitting:
               
         self.h[:,1:]=H
 
+        if self.fit_gamma:
+            # average of a_lambda0 = 0
+            mean_a_lambda0 = copy.deepcopy(np.mean(self.h[:,(1+self.grey)]))
+            self.h[:,(1+self.grey)] -= mean_a_lambda0
+            self.A[:,0] += mean_a_lambda0 * self.A[:,(1+self.grey)]
+
+            # corrcoeff a_lambda0 and h_i = 0
+            if self.control:
+                self.comp_chi2()
+                chi2 = self.chi2
+            self.decorrelate_a_lambda0_h()
+            if self.control:
+                self.comp_chi2()
+                if abs(self.chi2-chi2)>1e-6:
+                    print 'problem decorelation a_lambda0 h_i'
+                    print "chi2 before %f chi2 after %f"%((chi2,self.chi2))
+
+            # scale of gamma_lambda fixed on the median wavelength
+            if len(self.wavelength)%2==1:
+                ind_med = list(self.wavelength).index(np.median(self.wavelength))
+            else:
+                ind_med = (len(self.wavelength)/2)-1
+            gamma_med = copy.deepcopy(self.A[:,(1+self.grey)][ind_med])
+            self.h[:,(1+self.grey)] *= gamma_med
+            self.A[:,(1+self.grey)] /= gamma_med
+
         if self.fit_grey:
             # mean of grey = 0
             if self.control:
@@ -405,21 +456,41 @@ class sugar_fitting:
                     print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
                 chi2 = self.chi2
 
-            #decorrelation grey xplus
+            #decorrelation grey h
             self.decorrelate_grey_h()
 
             if self.control:
                 self.comp_chi2()
                 if abs(self.chi2-chi2)>1e-6:
                     print "chi2 avant %f chi2 apres %f"%((chi2,self.chi2))
+
+    def decorrelate_a_lambda0_h(self):
+        self.separate_component()
+        h = copy.deepcopy(self._h)
+        self.add_cst_h_a_lambda0 = np.zeros(len(self._h[0]))
+        self.cov_a_lambda0_h = np.zeros(len(self._h[0]))
+
+        for ncomp in range(len(self.cov_a_lambda0_h)):
+            self.cov_a_lambda0_h[ncomp] = np.cov(self.a_lambda0,h[:,ncomp])[0,1]
+
+        if len(self.cov_a_lambda0_h)==1:
+            add_cst = self.cov_a_lambda0_h/(np.std(h)**2)
+        else:
+            add_cst = np.dot(np.linalg.inv(np.cov(h.T)),self.cov_a_lambda0_h)
             
- 
+        self.add_cst_h_a_lambda0 = add_cst
+
+        for ncomp in range(len(self._h[0])):
+            self.a_lambda0 -= self._h[:,ncomp]*self.add_cst_h_a_lambda0[ncomp]
+            self.alpha[:,ncomp] += self.add_cst_h_a_lambda0[ncomp] * self.gamma_lambda
+        self.merge_component()
+
     def decorrelate_grey_h(self):
         self.separate_component()
         h = copy.deepcopy(self._h)
         self.add_cst_xplus = np.zeros(len(self._h[0]))
         self.cov_grey_xplus = np.zeros(len(self._h[0]))
-              
+
         for ncomp in range(len(self.cov_grey_xplus)):
             self.cov_grey_xplus[ncomp] = np.cov(self.delta_m_grey,h[:,ncomp])[0,1]
 
@@ -546,17 +617,23 @@ class sugar_fitting:
     def separate_component(self):
 
         self.m0 = copy.deepcopy(self.A[:,0])
-        self.alpha = copy.deepcopy(self.A[:,1+self.grey:])
-        self._x = copy.deepcopy(self.x[:,1+self.grey:])
-        self._h = copy.deepcopy(self.h[:,1+self.grey:])
+        self.alpha = copy.deepcopy(self.A[:,1+self.grey+self.color:])
+        self._x = copy.deepcopy(self.x[:,1+self.grey+self.color:])
+        self._h = copy.deepcopy(self.h[:,1+self.grey+self.color:])
         if self.fit_grey:
             self.delta_m_grey = copy.deepcopy(self.h[:,1])
+        if self.fit_gamma:
+            self.a_lambda0 = copy.deepcopy(self.h[:,self.grey+self.color])
+            self.gamma_lambda = copy.deepcopy(self.A[:,self.grey+self.color])
 
     def merge_component(self):
 
         self.A[:,0] = copy.deepcopy(self.m0)
-        self.A[:,1+self.grey:] = copy.deepcopy(self.alpha)
-        self.x[:,1+self.grey:] = copy.deepcopy(self._x)
-        self.h[:,1+self.grey:] = copy.deepcopy(self._h)
+        self.A[:,1+self.grey+self.color:] = copy.deepcopy(self.alpha)
+        self.x[:,1+self.grey+self.color:] = copy.deepcopy(self._x)
+        self.h[:,1+self.grey+self.color:] = copy.deepcopy(self._h)
         if self.fit_grey:
             self.h[:,1] = copy.deepcopy(self.delta_m_grey)
+        if self.fit_gamma:
+            self.h[:,self.grey+self.color] = copy.deepcopy(self.a_lambda0)
+            self.A[:,self.grey+self.color] = copy.deepcopy(self.A[:,self.grey+self.color])
