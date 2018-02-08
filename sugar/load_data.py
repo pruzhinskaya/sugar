@@ -162,7 +162,7 @@ class load_data_sugar:
 
     def load_salt2_data(self):
 
-        meta = cPickle.load(open(path+'/data_input/META_JLA.pkl'))
+        meta = cPickle.load(open(path+'/data_input/SNF-0203-CABALLOv2/META.pkl'))
 
         for i in range(len(self.sn_name)):
             self.X0.append(meta[self.sn_name[i]]['salt2.X0'])

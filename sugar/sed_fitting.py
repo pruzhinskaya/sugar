@@ -640,8 +640,8 @@ class sugar_fitting:
             reml += -np.sum(np.log(valps[np.nonzero(valps>0)]))
         return reml
 
-    #def build_dispersion_matrix(self, max_iter=150):
-    def build_dispersion_matrix(self, max_iter=2):
+    def build_dispersion_matrix(self, max_iter=150):
+    #def build_dispersion_matrix(self, max_iter=2):
         if self.sparse:
             raise ValueError('numpy array is needed for this fonction')
 
@@ -653,7 +653,7 @@ class sugar_fitting:
         REML=self._comp_REML_approx()
         REMLs = [REML_old,REML]
         print "\nCurrent REML:"
-        while ( np.abs(REML-REML_old)>0.001 ) and n<=2:
+        while ( np.abs(REML-REML_old)>0.01 ) and n<=2:
             print n, REML
             self.disp_matrix = self.measured_dispersion_matrix()
             self.reload_wy()
@@ -662,7 +662,7 @@ class sugar_fitting:
             REML_old = REML
             REML = self._comp_REML_approx()
 
-            if np.abs(REML-REMLs[-2])<0.00001: n+=1
+            if np.abs(REML-REMLs[-2])<0.1: n+=1
             REMLs.append(REML)
 
             controle_reml += 1
@@ -681,8 +681,8 @@ class sugar_fitting:
         for sn in range(self.nsn): 
             self.wy[sn] = np.linalg.inv(self.covy[sn] + self.disp_matrix) 
 
-    def run_fit(self, maxiter=1, not_build_disp=False):
-    #def run_fit(self, maxiter=10000, not_build_disp=True):
+    #def run_fit(self, maxiter=1, not_build_disp=False):
+    def run_fit(self, maxiter=10000, not_build_disp=False):
 
         self.chi2_save = []
         self.comp_chi2()

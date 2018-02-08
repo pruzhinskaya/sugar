@@ -16,7 +16,7 @@ class load_data_to_build_sugar:
         self.path_output = path_output
         self.path_output_gp = path_output_gp
 
-        dicpca = cPickle.load(open(os.path.join(self.path_output,'emfa_3_sigma_clipping.pkl')))
+        dicpca = cPickle.load(open(os.path.join(self.path_output,'emfa_output.pkl')))
         pca_sn_name = np.array(dicpca['sn_name'])
 
         if filtre:

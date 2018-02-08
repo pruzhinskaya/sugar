@@ -225,7 +225,7 @@ class build_spectral_data:
             spectra = copy.deepcopy(self.dico_spectra[sn])
             for j,pause in enumerate(spectra.keys()):
                 print 'processing ' + sn + ' pause ' + pause
-                spectra[pause]['Y'] += -5.*np.log10(sugar.distance_modulus(spectra[pause]['z_helio'], spectra[pause]['z_cmb'])) + 5.
+                spectra[pause]['Y'] -= sugar.distance_modulus(spectra[pause]['z_helio'], spectra[pause]['z_cmb'])
                 spectra[pause].update({'Y_flux':go_to_flux(spectra[pause]['X'],copy.deepcopy(spectra[pause]['Y']))})
             dic_spectra.update({sn:spectra})
         self.dico_spectra = dic_spectra
@@ -249,11 +249,13 @@ class build_spectral_data:
             spectra = copy.deepcopy(self.dico_spectra[sn])
             spec = {}
             ind_new = 0
+            phase_max = []
             for j in range(len(spectra.keys())):
                 minimum = (10.**23)
                 ind = '0'
                 for k,pause in enumerate(spectra.keys()):
                     phase = spectra[pause]['phase_salt2']
+                    phase_max.append(phase)
                     if phase < minimum:
                         minimum = phase
                         ind = pause
@@ -268,11 +270,13 @@ class build_spectral_data:
                     ind_new += 1
 
                 del spectra[ind]
-
-            dic_spectra.update({sn:spec})
+            if np.min(abs(np.array(phase_max)))<self.day_max:
+                dic_spectra.update({sn:spec})
 
         self.dico_spectra = dic_spectra
-        
+        self.sn_name = np.array(self.dico_spectra.keys())
+        self.sn_name.sort()
+
     def control_plot(self):
         """
         Display all spectal time series.
@@ -283,7 +287,7 @@ class build_spectral_data:
             cst = 0
             for key in self.dico_spectra[sn].keys():
                 plt.plot(self.dico_spectra[sn][key]['X'],self.dico_spectra[sn][key]['Y']-cst,'b')
-                cst += 2.
+                #cst += 2.
             plt.title(sn)
             plt.gca().invert_yaxis()
             plt.show()
@@ -363,10 +367,10 @@ if __name__=="__main__":
     bsd.to_ab_mag()
     bsd.cosmology_corrected()
     bsd.reorder_and_clean()
-    bsd.write_pkl('test_output.pkl')
+    bsd.write_pkl('data_input/spectra_snia.pkl')
     bsd.control_plot()
 
-    bmd = build_at_max_data('test_output.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
+    bmd = build_at_max_data('data_input/spectra_snia.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
     bmd.select_spectra_at_max()
     bmd.select_spectral_indicators()
-    bmd.write_pkl('test_output_si.pkl')
+    bmd.write_pkl('data_input/spectra_and_si_at_max.pkl')
