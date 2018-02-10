@@ -33,3 +33,4 @@ from .make_sugar_sed import make_sugar
 
 from .build_sugar import build_model
 
+from .hubble_diagram import comp_rms

@@ -14,6 +14,7 @@ from ToolBox.Plots import scatterPlot as SP
 import matplotlib.gridspec as gridspec
 from ToolBox import MPL
 from matplotlib.widgets import Slider, Button, RadioButtons
+import sugar
 
 
 class SUGAR_plot:
@@ -132,14 +133,24 @@ class SUGAR_plot:
     def plot_spectrum_corrected(self,No_corrected=True):
 
         Mag_all_sn=copy.deepcopy(self.Mag_no_corrected)
+        Mag_all_sn_var = N.zeros_like(Mag_all_sn)
+        wRMS = N.zeros(len(self.X))
+        wRMS_no_correct = N.zeros(len(self.X))
 
         for Bin in range(len(self.X)):
             if self.Rv>0:
                 Mag_all_sn[:,Bin]-=(N.dot(self.alpha[Bin],self.data.T))+self.trans+(self.Av*Astro.Extinction.extinctionLaw(self.X[Bin],Rv=self.Rv))
             else:
                 Mag_all_sn[:,Bin]-=(N.dot(self.alpha[Bin],self.data.T))+self.trans
+
+            Mag_all_sn_var[:,Bin] = self.Y_err[:,Bin]**2 + self.Y_build_error[:,Bin]**2 + self.disp_matrix[Bin,Bin]
+
+            wRMS[Bin] = sugar.comp_rms(Mag_all_sn[:,Bin]-self.M0[Bin], 'francis', err=False, variance=Mag_all_sn_var[:,Bin])
+            wRMS_no_correct[Bin] = sugar.comp_rms(self.Mag_no_corrected[:,Bin] - N.average(self.Mag_no_corrected[:,Bin],weights=1./self.Y_err[:,Bin]**2), 'francis', err=False, variance=self.Y_err[:,Bin]**2)
         
         self.MAG_CORRECTED= Mag_all_sn
+        self.WRMS_CORR = wRMS
+        self.WRMS_NO_CORR = wRMS_no_correct
 
         indice = N.linspace(0,len(self.Av)-1,len(self.Av)).astype(int)
         Av, indice = zip(*sorted(zip(self.Av, indice)))
@@ -170,16 +181,16 @@ class SUGAR_plot:
         P.xlim(self.X[0]-60,self.X[-1]+60)
         #P.legend(loc=4)
         P.gca().invert_yaxis()
-        STD=N.std(Mag_all_sn,axis=0)
-        STD_no_correct=N.std(self.Mag_no_corrected,axis=0)
+        #STD=N.std(Mag_all_sn,axis=0)
+        #STD_no_correct=N.std(self.Mag_no_corrected,axis=0)
         P.subplot(2,1,2)
         if No_corrected:
-            P.plot(self.X,STD_no_correct,'r',linewidth=3,label=r'Observed RMS, average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD_no_correct[self.floor_filter])))
+            P.plot(self.X,wRMS_no_correct,'r',linewidth=3,label=r'Observed wRMS, average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(wRMS_no_correct[self.floor_filter])))
 
-        P.plot(self.X,STD,'b',linewidth=3,label=r'Corrected RMS, average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(STD[self.floor_filter])))
+        P.plot(self.X,wRMS,'b',linewidth=3,label=r'Corrected wRMS, average between $[6360\AA,6600\AA]$ = %.2f mag' %(N.mean(wRMS[self.floor_filter])))
 
         P.plot(self.X,N.zeros(len(self.X)),'k')
-        P.ylabel('RMS (mag)',fontsize=20)
+        P.ylabel('wRMS (mag)',fontsize=20)
         P.xlabel('wavelength [$\AA$]',fontsize=20)
         P.xlim(self.X[0]-60,self.X[-1]+60)
         P.ylim(0.0,0.62)
@@ -451,7 +462,7 @@ class SUGAR_plot:
         
         CCM31=Astro.Extinction.extinctionLaw(self.X,Rv=3.1,law='CCM89')
         CCM26=Astro.Extinction.extinctionLaw(self.X,Rv=2.7,law='CCM89')
-        CCM14=Astro.Extinction.extinctionLaw(self.X,Rv=1.4,law='CCM89')
+        CCM14=Astro.Extinction.extinctionLaw(self.X,Rv=2.0,law='CCM89')
         Ind_med=(len(self.X)/2)-1
         CCM31/=CCM31[Ind_med]
         CCM26/=CCM26[Ind_med]
@@ -490,11 +501,12 @@ class SUGAR_plot:
         P.plot(AVV,slopes[Bin]*AVV,'r',label='$\gamma_{%i\AA}$'%(self.X[Bin]),lw=3)
         P.plot(AVV,CCM31[Bin]*AVV,'k--',linewidth=3,label='CCM $(R_V=3.1)$')
         P.plot(AVV,CCM26[Bin]*AVV,'b--',linewidth=3,label='CCM $(R_V=2.7)$')
-        P.plot(AVV,CCM14[Bin]*AVV,'k-.',linewidth=3,label='CCM $(R_V=1.4)$')
+        P.plot(AVV,CCM14[Bin]*AVV,'k-.',linewidth=3,label='CCM $(R_V=2.0)$')
         P.ylabel('$M(t=0,\lambda)-M_0(t=0,\lambda) - \sum_{i=1}^{i=3} \\alpha_i(0,\lambda) q_i$',fontsize=18)
         P.xlabel('$A_{\lambda_0}$',fontsize=20)
-        P.text(-0.55,1.55,r'$\lambda=%i \AA$'%(self.X[Bin]),fontsize=20)
+        P.text(-0.3,1.3,r'$\lambda=%i \AA$'%(self.X[Bin]),fontsize=20)
         P.ylim(min(MAG[:,Bin])-0.3,max(MAG[:,Bin])+0.3)
+        P.xlim(-0.6,1.1)
         #gca().invert_yaxis()
         P.legend(loc=4)
 
@@ -503,10 +515,10 @@ class SUGAR_plot:
         P.plot(self.X,slopes,'r',label= '$\gamma_{\lambda}$',lw=3)
         P.plot(self.X,CCM31,'k-.',linewidth=3,label= 'CCM $(R_V=3.1)$')
         P.plot(self.X,CCM26,'b--',linewidth=3,label= 'CCM $(R_V=2.7)$')
-        P.plot(self.X,CCM14,'k--',linewidth=3,label= 'CCM $(R_V=1.4)$')
+        P.plot(self.X,CCM14,'k--',linewidth=3,label= 'CCM $(R_V=2.0)$')
         P.ylabel(r'$(\partial A_{\lambda}$ / $\partial A_V)$',fontsize=20)
         P.xlabel('wavelength [$\AA$]',fontsize=20)
-        P.ylim(0.4,2.1)
+        P.ylim(0.35,2.1)
         P.xlim(self.X[0]-60,self.X[-1]+60)
         P.legend()
         
@@ -608,9 +620,9 @@ def plot_disp_eig(LIST_dic,dic=None):
             SP.plot_spectrum_corrected()
             P.close()
             if i==0:
-                STD.append(N.std(SP.Mag_no_corrected,axis=0))
+                STD.append(SP.WRMS_NO_CORR)
                 X.append(SP.X) 
-            STD.append(N.std(SP.MAG_CORRECTED,axis=0))
+            STD.append(SP.WRMS_CORR)
             color_law.append(SP.slope)
 
         dic = {'STD':STD,
@@ -642,7 +654,7 @@ def plot_disp_eig(LIST_dic,dic=None):
 
         P.plot(X[0],STD[i],COLOR[i],label=LABEL,linewidth=3)
 
-    P.ylabel('RMS (mag)',fontsize=25)
+    P.ylabel('wRMS (mag)',fontsize=25)
 
     P.ylim(0,0.65)
     P.xticks([3100,8800],['',''])
@@ -748,17 +760,17 @@ if __name__=='__main__':
     lst_dic=[]
     for i in range(5):
         #lst_dic.append(path+'/data_output/SUGAR_model_for_phd/model_at_max_%i_eigenvector_without_grey_without_MFR_problem.pkl'%(i+1))
-        lst_dic.append('../sugar/data_output/sugar_paper_output/model_at_max_%i_eigenvector_without_grey_with_sigma_clipping.pkl'%(i+1))
+        lst_dic.append('../sugar/data_output/sugar_paper_output/model_at_max_%i_eigenvector_without_grey.pkl'%(i+1))
     
-    #plot_disp_eig(lst_dic,dic = 'disp_eig.pkl')
+    #plot_disp_eig(lst_dic)#,dic = 'disp_eig.pkl')
     #P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
-    #plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1],dic='vec_emfa_residual.pkl')
+    ##plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])#,dic='vec_emfa_residual.pkl')
     #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
-    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')
-    #SP.plot_bin_Av_slope(42)
+    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl')
+    SP.plot_bin_Av_slope(42)
     #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
     SP.plot_spectrum_corrected()
     #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
-    #SP.plot_spectral_variability(name_fig=None)
+    SP.plot_spectral_variability(name_fig=None)
 

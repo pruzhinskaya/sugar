@@ -1,16 +1,11 @@
 """salt2 hubble diagram."""
 
 import sugar
-import pylab as P
-from matplotlib import rc, rcParams
-from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 import numpy as N
 import os 
 import copy
 import cPickle
 import iminuit as minuit
-import matplotlib.gridspec as gridspec
-from matplotlib.patches import Ellipse
 from scipy import optimize,integrate
 
 
@@ -212,6 +207,12 @@ if __name__=="__main__":
     grey = N.array([dic[sn]['grey'] for sn in dic.keys()])
 
     binning = N.linspace(-0.55,0.40,10)
+
+    import pylab as P
+    from matplotlib import rc, rcParams
+    from matplotlib.ticker import AutoMinorLocator, MultipleLocator
+    import matplotlib.gridspec as gridspec
+    from matplotlib.patches import Ellipse
 
     P.figure()
     P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)

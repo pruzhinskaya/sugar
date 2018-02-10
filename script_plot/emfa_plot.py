@@ -123,8 +123,8 @@ class emfa_plot:
         new_base = new_base[:,:split]
         new_err = new_err[:,:split]
 
-        new_base[:,0] *= -1
-        new_base[:,1] *= -1
+        #new_base[:,0] *= -1
+        #new_base[:,1] *= -1
 
         nsil = ['pEWCa II H&K', r'pEWSi II $\lambda$4131', 'pEWMg II',
                 'pEWFe $\lambda$4800', 'pEWS II W', 'pEWSi II $\lambda$5972',
@@ -256,8 +256,8 @@ class emfa_plot:
         new_base = new_base[:,:split]
         new_err = new_err[:,:split]
 
-        new_base[:,0] *= -1
-        new_base[:,1] *= -1
+        #new_base[:,0] *= -1
+        #new_base[:,1] *= -1
         
         data_sugar = sugar.load_data_sugar()
         data_sugar.load_salt2_data()
@@ -387,6 +387,6 @@ if __name__=='__main__':
 
     faplot = emfa_plot()
     #faplot.no_linear()
-    #faplot.plot_eigenvalues(noise=True)
+    faplot.plot_eigenvalues(noise=True)
     faplot.plot_pf_corr_factor_si(split=5)
     faplot.plot_pf_corr_factor_salt2(split=5)
