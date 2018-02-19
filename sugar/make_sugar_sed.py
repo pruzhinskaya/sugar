@@ -33,7 +33,7 @@ class load_data_to_build_sugar:
         self.pca_Norm_err = dicpca['Norm_err'][FILTRE]
         self.sn_name = pca_sn_name[FILTRE]
 
-        dic_model=cPickle.load(open(os.path.join(self.path_output,'sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl')))
+        dic_model=cPickle.load(open(os.path.join(self.path_output,'sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl')))
         self.sn_name_Av = dic_model['sn_name']
         self.Av = dic_model['Av_cardelli']
         self.Rv = dic_model['RV']

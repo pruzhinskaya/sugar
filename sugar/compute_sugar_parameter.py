@@ -34,28 +34,28 @@ class aligne_SED:
         self.Rv=Rv
         
     def align_SED(self):
-        Time=N.linspace(-12,42,19)
+        Time=N.linspace(-12,48,21)
         DELTA=len(self.Phase)
-        self.SED=N.ones((190*len(self.Phase),6))
-        for Bin in range(190):
-            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+        self.SED=N.ones((197*len(self.Phase),6))
+        for Bin in range(197):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*21:(Bin+1)*21])
             self.SED[:,0][Bin*DELTA:(Bin+1)*DELTA]=SPLINE_Mean(self.Phase)
             for i in range(3):
-                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.Alpha[:,i][Bin*19:(Bin+1)*19])
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.Alpha[:,i][Bin*21:(Bin+1)*21])
                 self.SED[:,i+3][Bin*DELTA:(Bin+1)*DELTA]=SPLINE(self.Phase)
             self.SED[:,2][Bin*DELTA:(Bin+1)*DELTA]=sugar.extinctionLaw(self.dic[self.sn]['0']['X'][Bin],Rv=self.Rv)
 
-        reorder = N.arange(190*DELTA).reshape(190, DELTA).T.reshape(-1)
+        reorder = N.arange(197*DELTA).reshape(197, DELTA).T.reshape(-1)
         for i in range(len(self.SED[0])):
             self.SED[:,i]=self.SED[:,i][reorder]
 
     def align_spectra(self):
-        self.Y=N.zeros(190*len(self.Phase))
-        self.Y_err=N.zeros(190*len(self.Phase))
+        self.Y=N.zeros(197*len(self.Phase))
+        self.Y_err=N.zeros(197*len(self.Phase))
         DELTA=len(self.Phase)
         for Bin in range(DELTA):
-            self.Y[Bin*190:(Bin+1)*190]=self.dic[self.sn][self.IND[Bin]]['Y']
-            self.Y_err[Bin*190:(Bin+1)*190]=N.sqrt(self.dic[self.sn][self.IND[Bin]]['V'])
+            self.Y[Bin*197:(Bin+1)*197]=self.dic[self.sn][self.IND[Bin]]['Y']
+            self.Y_err[Bin*197:(Bin+1)*197]=N.sqrt(self.dic[self.sn][self.IND[Bin]]['V'])
 
 
 class global_fit:
@@ -110,7 +110,7 @@ if __name__=="__main__":
 
     
     
-    dic_at_max = cPickle.load(open('data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'))
+    dic_at_max = cPickle.load(open('data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl'))
     dic_sed = cPickle.load(open('data_output/sugar_model.pkl'))
     SPECTRA = 'data_input/spectra_snia.pkl'
 

@@ -19,6 +19,11 @@ import sugar
 import cosmogp
 import sncosmo
 
+NBIN = 197
+NPHASE = 21
+PHASE_MIN = -12
+PHASE_MAX = 48
+
 class gp_interp:
 
     def __init__(self,time,y):
@@ -316,7 +321,7 @@ class SUGAR_plot:
 
     def plot_spectrophtometric_effec_time(self,comp=0):
 
-        reorder = N.arange(190*19).reshape(190, 19).T.reshape(-1)
+        reorder = N.arange(NBIN*NPHASE).reshape(NBIN, NPHASE).T.reshape(-1)
         X=self.X[reorder]
         M0=self.M0[reorder]
         ALPHA=self.alpha[:,comp][reorder]
@@ -324,27 +329,27 @@ class SUGAR_plot:
         CST=N.mean(M0)
         fig,ax1=P.subplots(figsize=(10,12))
         P.subplots_adjust(left=0.1, right=0.9,bottom=0.07,top=0.99)
-        Time=N.linspace(-12,42,19)
+        Time=N.linspace(PHASE_MIN,PHASE_MAX,NPHASE)
         Y2_label=[]
         Y2_pos=[]
-        for i in range(19):
+        for i in range(NPHASE):
             
             if i%2==0:
-                if (-12+(3*i))!=0:
+                if (PHASE_MIN+(3*i))!=0:
                     Y2_label.append('%i days'%(Time[i]))
                 else:
                     Y2_label.append('%i day'%(Time[i]))
 
-                Y2_pos.append(M0[i*190:(i+1)*190][-1]-CST)
+                Y2_pos.append(M0[i*NBIN:(i+1)*NBIN][-1]-CST)
 
-                ax1.plot(X[i*190:(i+1)*190],M0[i*190:(i+1)*190]-CST,'b')
+                ax1.plot(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,'b')
 
                 
-                y_moins=M0[i*190:(i+1)*190]-ALPHA[i*190:(i+1)*190]*(N.mean(self.data[:,comp])+N.sqrt(N.var(self.data[:,comp])))
-                y_plus=M0[i*190:(i+1)*190]+ALPHA[i*190:(i+1)*190]*(N.mean(self.data[:,comp])+N.sqrt(N.var(self.data[:,comp])))
+                y_moins=M0[i*NBIN:(i+1)*NBIN]-ALPHA[i*NBIN:(i+1)*NBIN]*(N.mean(self.data[:,comp])+N.sqrt(N.var(self.data[:,comp])))
+                y_plus=M0[i*NBIN:(i+1)*NBIN]+ALPHA[i*NBIN:(i+1)*NBIN]*(N.mean(self.data[:,comp])+N.sqrt(N.var(self.data[:,comp])))
 
-                ax1.fill_between(X[i*190:(i+1)*190],M0[i*190:(i+1)*190]-CST,y_plus-CST,color='m',alpha=0.7 )
-                ax1.fill_between(X[i*190:(i+1)*190],M0[i*190:(i+1)*190]-CST,y_moins-CST,color='g',alpha=0.7)
+                ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_plus-CST,color='m',alpha=0.7 )
+                ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_moins-CST,color='g',alpha=0.7)
 
                 if i==0:
                     CST-=2.2
@@ -387,7 +392,7 @@ class residual_plot:
 	self.alpha=SUGAR[:,3:6]
 
 
-    def plot_spectra_reconstruct(self,sn,T_min=-12,T_max=42):
+    def plot_spectra_reconstruct(self,sn,T_min=PHASE_MIN,T_max=PHASE_MAX):
         
         fig,ax1=P.subplots(figsize=(10,8))
         P.subplots_adjust(left=0.08, right=0.88,bottom=0.09,top=0.95)
@@ -399,7 +404,7 @@ class residual_plot:
         OFFSET=[]
         Off=0
         Phase=[]
-        Time=N.linspace(-12,42,19)
+        Time=N.linspace(PHASE_MIN,PHASE_MAX,NPHASE)
         DAYS=[-999]
         Y2_pos=[]
         Y2_label=[]
@@ -440,12 +445,12 @@ class residual_plot:
         Phase=N.array(Phase)
     
 
-        Reconstruction=N.zeros((len(Phase),190))
-        for Bin in range(190):
-            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+        Reconstruction=N.zeros((len(Phase),NBIN))
+        for Bin in range(NBIN):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*NPHASE:(Bin+1)*NPHASE])
             Reconstruction[:,Bin]+=SPLINE_Mean(Phase)
             for i in range(3):
-                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*19:(Bin+1)*19])
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*NPHASE:(Bin+1)*NPHASE])
             
                 Reconstruction[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
 
@@ -484,7 +489,7 @@ class residual_plot:
 
 
 
-    def plot_spectra_movie(self,sn,T_min=-12,T_max=42):
+    def plot_spectra_movie(self,sn,T_min=PHASE_MIN,T_max=PHASE_MAX):
 
         def go_to_flux(X,Y,ABmag0=48.59):
             Flux_nu=10**(-0.4*(Y+ABmag0))
@@ -492,15 +497,15 @@ class residual_plot:
             Flux=Flux_nu/f
             return Flux
 
-        Time = N.linspace(-12,42,19)
+        Time = N.linspace(PHASE_MIN,PHASE_MAX,NPHASE)
 
         phaseee = N.array([self.dic[sn]['%i'%(j)]['phase_salt2'] for j in range(len(self.dic[sn].keys()))])
-        if N.min(phaseee)<-12:
-            minp = -12
+        if N.min(phaseee)<PHASE_MIN:
+            minp = PHASE_MIN
         else:
             minp =  N.min(phaseee)
-        if N.max(phaseee)>42:
-            maxp = 42
+        if N.max(phaseee)>PHASE_MAX:
+            maxp = PHASE_MAX
         else:
             maxp = N.max(phaseee)
                             
@@ -525,25 +530,25 @@ class residual_plot:
                     wave_data = self.dic[sn]['%i'%(j)]['X']
                     Phase.append(self.dic[sn]['%i'%(j)]['phase_salt2'])
 
-        data = N.zeros((19,190))
+        data = N.zeros((NPHASE,NBIN))
         gp_data = N.loadtxt('../sugar/data_output/gaussian_process_greg/gp_predict/' + sn + '.predict')
-        wave_data = N.zeros(190)
-        for Bin in range(190):
-            data[:,Bin] = gp_data[:,2][Bin*19:(Bin+1)*19]
-            wave_data[Bin] = gp_data[:,1][Bin*19]
+        wave_data = N.zeros(NBIN)
+        for Bin in range(NBIN):
+            data[:,Bin] = gp_data[:,2][Bin*NPHASE:(Bin+1)*NPHASE]
+            wave_data[Bin] = gp_data[:,1][Bin*NPHASE]
                     
         Phase=N.array(Phase)
         salt = N.array(salt)
 
-        SUGAR = N.zeros((len(time_movie),190))
-        DATA = N.zeros((len(time_movie),190))
-        SALT = N.zeros((len(time_movie),190))
+        SUGAR = N.zeros((len(time_movie),NBIN))
+        DATA = N.zeros((len(time_movie),NBIN))
+        SALT = N.zeros((len(time_movie),NBIN))
 
-        for Bin in range(190):
-            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+        for Bin in range(NBIN):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*NPHASE:(Bin+1)*NPHASE])
             SUGAR[:,Bin]+=SPLINE_Mean(time_movie)
             for i in range(3):
-                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*19:(Bin+1)*19])
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*NPHASE:(Bin+1)*NPHASE])
             
                 SUGAR[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(time_movie)
 
@@ -552,7 +557,7 @@ class residual_plot:
                                                                   Rv=self.Rv)
             SUGAR[:,Bin] = go_to_flux(self.dic[sn]['0']['X'][Bin],SUGAR[:,Bin])
 
-        for Bin in range(190):
+        for Bin in range(NBIN):
             SPLINE=inter.InterpolatedUnivariateSpline(Time,data[:,Bin])
             DATA[:,Bin]+=SPLINE(time_movie)
             DATA[:,Bin] = go_to_flux(self.dic[sn]['0']['X'][Bin],DATA[:,Bin])
@@ -621,7 +626,7 @@ class residual_plot:
                 writer.grab_frame()
                 
 
-    def plot_spectra_reconstruct_residuals(self,sn,T_min=-12,T_max=42):
+    def plot_spectra_reconstruct_residuals(self,sn,T_min=PHASE_MIN,T_max=PHASE_MAX):
 
         fig,ax1=P.subplots(figsize=(10,8))
         P.subplots_adjust(left=0.08, right=0.88,bottom=0.09,top=0.95)
@@ -640,7 +645,7 @@ class residual_plot:
         OFFSET=[]
         Off=0
         Phase=[]
-        Time=N.linspace(-12,42,19)
+        Time=N.linspace(PHASE_MIN,PHASE_MAX,NPHASE)
         DAYS=[-999]
         JJ=[]
         Y2_pos=[]
@@ -697,16 +702,16 @@ class residual_plot:
 
         Phase=N.array(Phase)
 
-        Reconstruction=N.zeros((len(Phase),190))
-        rec1 = N.zeros((len(Phase),190))
-        rec2 = N.zeros((len(Phase),190))
-        for Bin in range(190):
-            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*19:(Bin+1)*19])
+        Reconstruction=N.zeros((len(Phase),NBIN))
+        rec1 = N.zeros((len(Phase),NBIN))
+        rec2 = N.zeros((len(Phase),NBIN))
+        for Bin in range(NBIN):
+            SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*NPHASE:(Bin+1)*NPHASE])
             Reconstruction[:,Bin]+=SPLINE_Mean(Phase)
             rec1[:,Bin]+=SPLINE_Mean(Phase)
             rec2[:,Bin]+=SPLINE_Mean(Phase)
             for i in range(3):
-                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*19:(Bin+1)*19])
+                SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*NPHASE:(Bin+1)*NPHASE])
                 Reconstruction[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
                 if i==0:
                     rec1[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
@@ -771,7 +776,7 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
         rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
                            '../sugar/data_output/SUGAR_model_v1.asci',
                            '../sugar/data_output/sugar_parameters.pkl',
-                           '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
+                           '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl',
                            dic_salt = '../sugar/data_input/file_pf_bis.pkl')
 
         residual_sel = []
@@ -793,11 +798,11 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
             i+=1
         P.close('all')
 
-        res_sel = N.zeros((nspectra,190))
-        res_sucre = N.zeros((nspectra,190))
-        res_sucre_1 = N.zeros((nspectra,190))
-        res_sucre_2 = N.zeros((nspectra,190))
-        res_err = N.zeros((nspectra,190))
+        res_sel = N.zeros((nspectra,NBIN))
+        res_sucre = N.zeros((nspectra,NBIN))
+        res_sucre_1 = N.zeros((nspectra,NBIN))
+        res_sucre_2 = N.zeros((nspectra,NBIN))
+        res_err = N.zeros((nspectra,NBIN))
         t = 0
         for i in range(len(dic.keys())):
             for j in range(len(residual_sel[i])):
@@ -853,16 +858,16 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
 if __name__=='__main__':
 
 
-    #compare_sel_sucre(plot_slopes=True)
+    compare_sel_sucre(plot_slopes=False)
 
-    #plot_corr_sucre()
+    plot_corr_sucre()
     
-    #wRMS_sed_sugar_salt()
+    wRMS_sed_sugar_salt(WRMS=None)
     
-    #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
-    #SED.plot_spectrophtometric_effec_time(comp=0)
-    #SED.plot_spectrophtometric_effec_time(comp=1)
-    #SED.plot_spectrophtometric_effec_time(comp=2)
+    SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
+    SED.plot_spectrophtometric_effec_time(comp=0)
+    SED.plot_spectrophtometric_effec_time(comp=1)
+    SED.plot_spectrophtometric_effec_time(comp=2)
 
 
     #Compare_TO_SUGAR_parameter()
@@ -876,16 +881,16 @@ if __name__=='__main__':
                        dic_salt = '../sugar/data_input/file_pf_bis.pkl')
 
     
-    ##sn = 'PTF09dnl'
-    sn = 'SN2008ec'
+    sn = 'PTF09dnl'
+    #sn = 'SN2008ec'
     #sn = 'SN2006X'
     #rp.plot_spectra_movie(sn)
     #sn = 'SN2012cu'
     #for sn in dic.keys():
-    rp.plot_spectra_movie(sn)
+    #rp.plot_spectra_movie(sn)
     
-    #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
+    rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
     
     #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
-    #sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
+    sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
     #P.savefig('plot_paper/reconstruct/'+sn+'_residual.pdf')

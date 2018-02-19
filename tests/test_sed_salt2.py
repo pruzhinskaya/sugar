@@ -11,7 +11,7 @@ model = sncosmo.Model(source=source_salt24)
 
 for_pf_bis = cPickle.load(open('../sugar/data_input/spectra_snia.pkl'))
 #for_pf_bis = cPickle.load(open('../sugar/data_input/File_for_PF.pkl'))
-meta = cPickle.load(open('../sugar/data_input/META_JLA.pkl'))
+meta = cPickle.load(open('../sugar/data_input/SNF-0203-CABALLOv2/META.pkl'))
 
 for sn in for_pf_bis.keys():
     #sn = 'SN2006cj'

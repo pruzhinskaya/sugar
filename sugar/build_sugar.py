@@ -10,14 +10,14 @@ class build_model:
         """
         # gaussian process part
 
-        gp = sugar.gp_sed(path_input = path_input, hsiao_empca=True)
-        gp.gaussian_process_regression()
-        gp.write_output(path_output = path_output_gp)
+        ##gp = sugar.gp_sed(path_input = path_input, average=True, double_average=False)
+        ##gp.gaussian_process_regression()
+        ##gp.write_output(path_output = path_output_gp)
 
         # emfa on spectral features
 
-        sugar.run_emfa_analysis(path_input, path_output,
-                                sigma_clipping=True)
+        ##sugar.run_emfa_analysis(path_input, path_output,
+        ##                        sigma_clipping=True)
 
         # TO DO: implement Rv fitting (done at ccin2p3 for the moment)
 

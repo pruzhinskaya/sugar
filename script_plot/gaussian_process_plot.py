@@ -154,7 +154,7 @@ def plot_snia_interpolation(sn_name):
     
     for i in range(len(gp_interp[0])):
         ldbg.load_data_bin(i)
-        ldbg.load_mean_bin(i,hsiao_empca=True)
+        ldbg.load_mean_bin(i,average=True)
         
         gpr = cosmogp.gaussian_process_nobject(ldbg.y, ldbg.time, kernel='RBF1D',
                                                y_err=ldbg.y_err, diff=diff, Mean_Y=ldbg.mean,
@@ -209,4 +209,4 @@ if __name__=='__main__':
 
     plot_gp_output()
     plt.savefig('plot_paper/gaussian_processes.pdf')
-    #plot_snia_interpolation('PTF09foz')
+    plot_snia_interpolation('PTF09foz')

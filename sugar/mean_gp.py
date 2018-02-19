@@ -42,7 +42,7 @@ def comp_mean(phase_min=-12, phase_max=48, draw=False):
     average_function_light_curve_smooth = np.zeros_like(average_function_light_curve)
     for i in range(number_bin_wavelength):
         print i
-        average_function_light_curve_smooth[number_bin_phases*i:number_bin_phases*(i+1)] = savgol_filter(average_function_light_curve[number_bin_phases*i:number_bin_phases*(i+1)], 7, 2)
+        average_function_light_curve_smooth[number_bin_phases*i:number_bin_phases*(i+1)] = savgol_filter(average_function_light_curve[number_bin_phases*i:number_bin_phases*(i+1)], 15, 2)
         
     average_function_spectra_smooth = average_function_light_curve_smooth[reorder_lc_to_spec]
 

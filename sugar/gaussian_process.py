@@ -59,7 +59,7 @@ class load_data_bin_gp:
             self.time.append(time)
 
 
-    def load_mean_bin(self, number_bin, hsiao_empca=True):
+    def load_mean_bin(self, number_bin, average=True):
         """
         Load the light curve average for the specific wavelength.
         """
@@ -70,7 +70,7 @@ class load_data_bin_gp:
         nnumber_bin = len(self.lds.spectra_wavelength[self.sn_name[0]]['0'])
         path = os.path.dirname(sugar.__file__)
         
-        if hsiao_empca:
+        if average:
             mean_file = os.path.join(self.path_input, 'mean_gaussian_process.dat')
             data = np.loadtxt(mean_file)
             number_points = len(data[:,0]) / nnumber_bin
@@ -92,14 +92,14 @@ class load_data_bin_gp:
         self.mean_wavelength = wavelength
 
 
-    def build_difference_mean(self, hsiao_empca=True):
+    def build_difference_mean(self, average=True):
         """
         Compute systematique difference between average and data.
         """
         self.diff = np.zeros(len(self.sn_name))
         path = os.path.dirname(sugar.__file__)
         
-        if hsiao_empca:
+        if average:
             mean_file = os.path.join(self.path_input,'mean_gaussian_process.dat')
             data = np.loadtxt(mean_file)
         else:
@@ -131,7 +131,7 @@ class load_data_bin_gp:
             mean_new_binning = np.zeros(delta_lambda * len(phase))
 
             for Bin in range(delta_lambda):
-                if hsiao_empca:
+                if average:
                     interpolate_mean = cosmogp.mean.interpolate_mean_1d(self.mean_time,
                                                                         data[:, 2][Bin * delta_mean: (Bin + 1) * delta_mean],
                                                                         phase)
@@ -151,7 +151,7 @@ class gp_sed:
     """Interpolate snia sed using gaussian process."""
     def __init__(self, path_input = path + '/data_input/',
                  grid_interpolation=np.linspace(-12,42,19),
-                 svd_method=False, hsiao_empca=False):
+                 svd_method=False, average=True, double_average=True):
         """
         Inteporlation of sed with gaussian process.
 
@@ -170,9 +170,12 @@ class gp_sed:
 
         self.wavelength = self.ldbg.wavelength
 
-        self.diff = self.ldbg.diff
-
-        self.hsiao_empca = hsiao_empca
+        if double_average:
+            self.diff = self.ldbg.diff
+        else:
+            self.diff = np.zeros_like(self.ldbg.diff)
+            
+        self.average = average
         
         self.sigma = np.zeros(len(self.wavelength))
         self.l = np.zeros(len(self.wavelength))
@@ -202,7 +205,7 @@ class gp_sed:
             print i+1,'/',len(self.wavelength)
 
             self.ldbg.load_data_bin(i)
-            self.ldbg.load_mean_bin(i,hsiao_empca=self.hsiao_empca)
+            self.ldbg.load_mean_bin(i,average=self.average)
 
             gpr = cosmogp.gaussian_process_nobject(self.ldbg.y, self.ldbg.time, kernel='RBF1D',
                                                    y_err=self.ldbg.y_err, diff=self.diff, Mean_Y=self.ldbg.mean,
@@ -282,7 +285,7 @@ if __name__=="__main__":
 
     import time
     A = time.time()
-    gp = gp_sed(hsiao_empca=True)
+    gp = gp_sed(average=True, grid_interpolation=np.linspace(-12,48,21), double_average=False)
     gp.gaussian_process_regression()
     gp.write_output()
     B = time.time()

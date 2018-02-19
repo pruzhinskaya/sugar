@@ -5,7 +5,7 @@ import sugar
 
 path = os.path.dirname(sugar.__file__)
 sed = path + '/data_output/sugar_model.pkl'
-max_light = path + '/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl'
+max_light = path + '/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl'
 
 dic = cPickle.load(open(sed))
 dic_at_max = cPickle.load(open(max_light))
