@@ -11,10 +11,10 @@ dic = cPickle.load(open(sed))
 dic_at_max = cPickle.load(open(max_light))
 fichier = open(path + '/data_output/SUGAR_model_v1.asci','w') 
 
-Time = N.linspace(-12,42,19)
+Time = N.linspace(-12,48,21)
 
 for Bin in range(len(dic['m0'])):
-    fichier.write('%.5f    %.5f    %.5f    %.5f    %.5f    %.5f    %.5f    %.5f \n'%((Time[Bin%19],
+    fichier.write('%.5f    %.5f    %.5f    %.5f    %.5f    %.5f    %.5f    %.5f \n'%((Time[Bin%21],
                                                                                       dic['X'][Bin],
                                                                                       dic['m0'][Bin],
                                                                                       dic['alpha'][Bin,0],
