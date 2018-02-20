@@ -199,7 +199,7 @@ class hubble_salt2(Hubble_diagram):
         
 if __name__=="__main__":
 
-    dic = cPickle.load(open('data_output/emfa_3_sigma_clipping.pkl'))
+    dic = cPickle.load(open('data_output/emfa_output.pkl'))
     sn_name = N.array(dic['sn_name'])[dic['filter']]
 
     hs = hubble_salt2(sn_name=sn_name)

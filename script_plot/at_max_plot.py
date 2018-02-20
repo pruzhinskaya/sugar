@@ -345,7 +345,7 @@ class SUGAR_plot:
             P.ylabel(r'$\alpha_{%i}(t=0,\lambda)$'%(correction+1),fontsize=16)
             P.xlabel('wavelength [$\AA$]',fontsize=16)
             P.xlim(self.X[0]-60,self.X[-1]+60)
-
+            P.gca().invert_yaxis()
             P.legend(loc=4)
 
             if name_fig!=None:
@@ -759,18 +759,17 @@ if __name__=='__main__':
     
     lst_dic=[]
     for i in range(5):
-        #lst_dic.append(path+'/data_output/SUGAR_model_for_phd/model_at_max_%i_eigenvector_without_grey_without_MFR_problem.pkl'%(i+1))
         lst_dic.append('../sugar/data_output/sugar_paper_output/model_at_max_%i_eigenvector_without_grey.pkl'%(i+1))
     
     #plot_disp_eig(lst_dic)#,dic = 'disp_eig.pkl')
     #P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
-    ##plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])#,dic='vec_emfa_residual.pkl')
+    #plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])#,dic='vec_emfa_residual.pkl')
     #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
     SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl')
-    SP.plot_bin_Av_slope(42)
+    #SP.plot_bin_Av_slope(42)
     #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
-    SP.plot_spectrum_corrected()
+    #SP.plot_spectrum_corrected()
     #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
     SP.plot_spectral_variability(name_fig=None)
 

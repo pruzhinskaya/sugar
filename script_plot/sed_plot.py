@@ -43,8 +43,8 @@ class gp_interp:
         return self.gp.Prediction[0]
 
 
-def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/sugar_paper_output/emfa_3_sigma_clipping.pkl',
-                               SED_max='../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
+def Compare_TO_SUGAR_parameter(emfa_pkl='../sugar/data_output/emfa_output.pkl',
+                               SED_max='../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl',
                                SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
 
     dic = cPickle.load(open(emfa_pkl))
@@ -352,7 +352,7 @@ class SUGAR_plot:
                 ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_moins-CST,color='g',alpha=0.7)
 
                 if i==0:
-                    CST-=2.2
+                    CST-=1.7
                 else:
                     CST-=1
 
@@ -858,11 +858,11 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
 if __name__=='__main__':
 
 
-    compare_sel_sucre(plot_slopes=False)
+    ##compare_sel_sucre(plot_slopes=False)
 
-    plot_corr_sucre()
+    ##plot_corr_sucre()
     
-    wRMS_sed_sugar_salt(WRMS=None)
+    ##wRMS_sed_sugar_salt(WRMS='wrms.pkl')
     
     SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
     SED.plot_spectrophtometric_effec_time(comp=0)
@@ -870,18 +870,18 @@ if __name__=='__main__':
     SED.plot_spectrophtometric_effec_time(comp=2)
 
 
-    #Compare_TO_SUGAR_parameter()
+    Compare_TO_SUGAR_parameter()
 
-    dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
+    #dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
-    rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
-                       '../sugar/data_output/SUGAR_model_v1.asci',
-                       '../sugar/data_output/sugar_parameters.pkl',
-                       '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_with_sigma_clipping_save_before_PCA.pkl',
-                       dic_salt = '../sugar/data_input/file_pf_bis.pkl')
+    #rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
+    #                   '../sugar/data_output/SUGAR_model_v1.asci',
+    #                   '../sugar/data_output/sugar_parameters.pkl',
+    #                   '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl',
+    #                   dic_salt = '../sugar/data_input/file_pf_bis.pkl')
 
     
-    sn = 'PTF09dnl'
+    #sn = 'PTF09dnl'
     #sn = 'SN2008ec'
     #sn = 'SN2006X'
     #rp.plot_spectra_movie(sn)
@@ -889,8 +889,8 @@ if __name__=='__main__':
     #for sn in dic.keys():
     #rp.plot_spectra_movie(sn)
     
-    rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
+    #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
     
     #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
-    sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
+    #sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
     #P.savefig('plot_paper/reconstruct/'+sn+'_residual.pdf')

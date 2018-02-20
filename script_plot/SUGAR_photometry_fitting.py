@@ -11,6 +11,10 @@ from build_mag import mag
 from ToolBox.Wrappers import SALT2model
 from ToolBox import Statistics
 
+NBIN = 197
+NPHASE = 21
+PHASEMIN = -12
+PHASEMAX = 48
 
 def d_l(z,H_0=69.999999999999996,Omega_m =0.26900000000000002,SNLS=False):
 
@@ -122,30 +126,30 @@ class build_SUGAR_ligh_curves:
     def align_time(self,New_time):
 
         self.Phase=New_time
-        self.wavelength=N.zeros(190)
-        self.SUGAR_Wavelength=N.zeros(190*len(self.Phase))
-        Time=N.linspace(-12,42,19)
+        self.wavelength=N.zeros(NBIN)
+        self.SUGAR_Wavelength=N.zeros(NBIN*len(self.Phase))
+        Time=N.linspace(PHASEMIN,PHASEMAX,NPHASE)
         DELTA=len(self.Phase)
-        self.Y_new_binning=N.zeros(190*len(self.Phase))
-        for Bin in range(190):
+        self.Y_new_binning=N.zeros(NBIN*len(self.Phase))
+        for Bin in range(NBIN):
 
 
-            #gp = cosmogp.gaussian_process(self.Y[Bin*19:(Bin+1)*19], N.linspace(-12,42,19), kernel='RBF1D',
-            #                              y_err=None, diff=None, Mean_Y=self.Y[Bin*19:(Bin+1)*19],
-            #                              Time_mean=N.linspace(-12,42,19), substract_mean=True)
+            #gp = cosmogp.gaussian_process(self.Y[Bin*NPHASE:(Bin+1)*NPHASE], N.linspace(PHASEMIN,PHASEMAX,NPHASE), kernel='RBF1D',
+            #                              y_err=None, diff=None, Mean_Y=self.Y[Bin*NPHASE:(Bin+1)*NPHASE],
+            #                              Time_mean=N.linspace(PHASEMIN,PHASEMAX,NPHASE), substract_mean=True)
 
             #gp.hyperparameters = [self.hyper_sigma[Bin],
             #                      self.hyper_l[Bin]]
 
             #gp.get_prediction(new_binning = self.Phase,COV=False)
 
-            self.Y_new_binning[Bin*DELTA:(Bin+1)*DELTA]=cosmogp.mean.interpolate_mean_1d(N.linspace(-12,42,19),
-                                                                                         self.Y[Bin*19:(Bin+1)*19],
+            self.Y_new_binning[Bin*DELTA:(Bin+1)*DELTA]=cosmogp.mean.interpolate_mean_1d(N.linspace(PHASEMIN,PHASEMAX,NPHASE),
+                                                                                         self.Y[Bin*NPHASE:(Bin+1)*NPHASE],
                                                                                          self.Phase)
-            self.SUGAR_Wavelength[Bin*DELTA:(Bin+1)*DELTA]=copy.deepcopy(self.SUGAR_wavelength[Bin*19:(Bin+1)*19][0])
-            self.wavelength[Bin]=self.SUGAR_wavelength[Bin*19:(Bin+1)*19][0]
+            self.SUGAR_Wavelength[Bin*DELTA:(Bin+1)*DELTA]=copy.deepcopy(self.SUGAR_wavelength[Bin*NPHASE:(Bin+1)*NPHASE][0])
+            self.wavelength[Bin]=self.SUGAR_wavelength[Bin*NPHASE:(Bin+1)*NPHASE][0]
 
-        reorder = N.arange(190*DELTA).reshape(190, DELTA).T.reshape(-1)
+        reorder = N.arange(NBIN*DELTA).reshape(NBIN, DELTA).T.reshape(-1)
         self.Y_new_binning=self.Y_new_binning[reorder]
         self.SUGAR_Wavelength=self.SUGAR_Wavelength[reorder]
         
@@ -176,18 +180,18 @@ class build_SUGAR_ligh_curves:
 
         for time in range(len(self.Phase)):
             print self.Phase[time]
-            self.BVR[0,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=B_SNf[0],lambda_max=B_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
-            self.BVR[1,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=V_SNf[0],lambda_max=V_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
-            self.BVR[2,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=R_SNf[0],lambda_max=R_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
-            self.BVR[3,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=U_PFL[0],lambda_max=U_PFL[-1],var=None, step=None,Model=self.Model,AB=False)[0]
-            self.BVR[4,time]=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=I_PFL[0],lambda_max=I_PFL[-1],var=None, step=None,Model=self.Model,AB=False)[0]
-            #self.B_band[time]=A.mag(self.wavelength,self.Flux[time*190:(time+1)*190], var=None, step=None, syst='STANDARD', filter='B')[0]
+            self.BVR[0,time]=mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN],lambda_min=B_SNf[0],lambda_max=B_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
+            self.BVR[1,time]=mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN],lambda_min=V_SNf[0],lambda_max=V_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
+            self.BVR[2,time]=mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN],lambda_min=R_SNf[0],lambda_max=R_SNf[-1],var=None, step=None,Model=self.Model,AB=False)[0]
+            self.BVR[3,time]=mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN],lambda_min=U_PFL[0],lambda_max=U_PFL[-1],var=None, step=None,Model=self.Model,AB=False)[0]
+            self.BVR[4,time]=mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN],lambda_min=I_PFL[0],lambda_max=I_PFL[-1],var=None, step=None,Model=self.Model,AB=False)[0]
+            #self.B_band[time]=A.mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN], var=None, step=None, syst='STANDARD', filter='B')[0]
 
             #if self.Phase[time]==0:
             #    if not BEST_PART:
-            #        self.B_max=A.mag(self.wavelength,self.Flux[time*190:(time+1)*190], var=None, step=None, syst='STANDARD', filter='B')
+            #        self.B_max=A.mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN], var=None, step=None, syst='STANDARD', filter='B')
             #    else:
-            #        self.B_max=mag(self.wavelength,self.Flux[time*190:(time+1)*190],lambda_min=6330,lambda_max=6600,var=None, step=None,Model=self.Model,AB=False)
+            #        self.B_max=mag(self.wavelength,self.Flux[time*NBIN:(time+1)*NBIN],lambda_min=6330,lambda_max=6600,var=None, step=None,Model=self.Model,AB=False)
                 #print self.B_max
 
 
@@ -221,7 +225,7 @@ class SUGAR_parameter_photometry:
     def __init__(self,BVR,BVR_err,Time,redshift,SUGAR_model='/sps/snovae/user/leget/CABALLO/SUGAR_model.asci',
                  HYPER='/sps/snovae/user/leget/CABALLO/Prediction_GP/hyperparameters.dat'):
 
-        Filtre=((Time>=-12) & (Time<=42))
+        Filtre=((Time>=PHASEMIN) & (Time<=PHASEMAX))
 
         self.BVR=BVR[:,Filtre]
         self.BVR_err=BVR_err[:,Filtre]
@@ -310,7 +314,7 @@ class plot_SUGAR_interactif:
     def __init__(self,SUGAR_model):
 
         self.SLC=build_SUGAR_ligh_curves(SUGAR_model)
-        self.SLC.SUGAR_change_phase(N.linspace(-12,42,25))
+        self.SLC.SUGAR_change_phase(N.linspace(PHASEMIN,PHASEMAX,25))
 
     def plot_parameter(self,q1,q2,q3,Av,Grey):
 
@@ -319,7 +323,7 @@ class plot_SUGAR_interactif:
         self.SLC.build_light_curves()
         COLOR=['b','g','k']
         for i in range(3):
-            P.plot(N.linspace(-12,42,25),self.SLC.BVR[i],COLOR[i],linewidth=4)
+            P.plot(N.linspace(PHASEMIN,PHASEMAX,25),self.SLC.BVR[i],COLOR[i],linewidth=4)
             
         P.gca().invert_yaxis()
 
@@ -415,7 +419,7 @@ def plot_light_curve(SN,BVR_data,BVR_phase,BVR_model,BVR_model_phase,BVR_model_o
                 P.ylabel('residuals (mag)')
                 
             p1 = Rectangle((0, 0), 0, 0, alpha=0.0)
-            Filtre=((BVR_phase>-12) & (BVR_phase<42))
+            Filtre=((BVR_phase>PHASEMIN) & (BVR_phase<PHASEMAX))
             nMAD=0#Statistics.nMAD(BVR_data[2-i][Filtre]-BVR_model_on_data[2-i][Filtre],weights=1./BVR_err[2-i][Filtre]**2)
             #leg=P.legend([p1], ['RMS=%.4f'%(N.sqrt((1./sum(Filtre))*N.sum((BVR_data[2-i][Filtre]-BVR_model_on_data[2-i][Filtre])**2)))],
             #             bbox_to_anchor=(1.01, 0.42),
@@ -448,8 +452,8 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
     x2=N.array([0,X2,0,0])
     x3=N.array([0,0,X3,0])
     Av=N.array([0,0,0,AV])
-    Time=N.linspace(-12,42,50)
-    #Time=N.linspace(-12,42,19)
+    Time=N.linspace(PHASEMIN,PHASEMAX,50)
+    #Time=N.linspace(PHASEMIN,PHASEMAX,NPHASE)
     
 
     SN_model=MC_light_curve(SUGAR_model,Hyper,Time)
@@ -527,7 +531,7 @@ def Make_movie(SUGAR_model,Hyperparameter,Q='1',Var=3):
 
     
     
-    TIME=N.linspace(-12,42,120)
+    TIME=N.linspace(PHASEMIN,PHASEMAX,120)
 
     import matplotlib
     import matplotlib.pyplot as plt
@@ -576,9 +580,9 @@ def Make_movie(SUGAR_model,Hyperparameter,Q='1',Var=3):
                     plt.cla()
                     
 
-                plt.plot(BS.wavelength,MEAN[i*190:(i+1)*190]-CST,'b')
-                plt.fill_between(BS.wavelength,MEAN[t*190:(t+1)*190]-CST,MEAN_plus[t*190:(t+1)*190]-CST,color='m',alpha=0.7 )
-                plt.fill_between(BS.wavelength,MEAN[t*190:(t+1)*190]-CST,MEAN_minus[t*190:(t+1)*190]-CST,color='g',alpha=0.7)
+                plt.plot(BS.wavelength,MEAN[i*NBIN:(i+1)*NBIN]-CST,'b')
+                plt.fill_between(BS.wavelength,MEAN[t*NBIN:(t+1)*NBIN]-CST,MEAN_plus[t*NBIN:(t+1)*NBIN]-CST,color='m',alpha=0.7 )
+                plt.fill_between(BS.wavelength,MEAN[t*NBIN:(t+1)*NBIN]-CST,MEAN_minus[t*NBIN:(t+1)*NBIN]-CST,color='g',alpha=0.7)
 
 
                 print Bin

@@ -208,5 +208,5 @@ def plot_snia_interpolation(sn_name):
 if __name__=='__main__':
 
     plot_gp_output()
-    plt.savefig('plot_paper/gaussian_processes.pdf')
-    plot_snia_interpolation('PTF09foz')
+    #plt.savefig('plot_paper/gaussian_processes.pdf')
+    #plot_snia_interpolation('PTF09foz')
