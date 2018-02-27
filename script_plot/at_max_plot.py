@@ -64,8 +64,6 @@ class SUGAR_plot:
                 continue
         self.floor_filter=floor_filter
 
-
-
     def plot_Av_vs_color(self,Meta_pkl):
 
         dic =cPickle.load(open(Meta_pkl))
@@ -79,9 +77,6 @@ class SUGAR_plot:
             Color_err[i]=dic[self.sn_name[i]]['salt2.Color.err']
             X1[i]=dic[self.sn_name[i]]['salt2.X1']
             X1_err[i]=dic[self.sn_name[i]]['salt2.X1.err']
-
-
-
 
         P.figure(figsize=(12,8))
         P.subplot(1,2,1)
@@ -155,10 +150,12 @@ class SUGAR_plot:
         indice = N.linspace(0,len(self.Av)-1,len(self.Av)).astype(int)
         Av, indice = zip(*sorted(zip(self.Av, indice)))
         colors = P.cm.coolwarm(self.Av)
+
+        P.figure(42)
         
-        P.figure(figsize=(12,12))
-        P.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.995,hspace=0.001)
-        
+        fig = P.figure(1,figsize=(12,12))
+        P.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.9,hspace=0.001)
+        CST_MANU = 0
         for sn in range(len(self.sn_name)):
             P.subplot(2,1,1)
             if No_corrected:
@@ -168,13 +165,22 @@ class SUGAR_plot:
                     P.plot(self.X,self.Mag_no_corrected[sn]+16.7,color=colors[sn],linewidth=3,zorder=self.Av[sn])
 
             if sn==0:
-                P.plot(self.X,Mag_all_sn[sn]+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
+                P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
             else:
-                P.plot(self.X,Mag_all_sn[sn]+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
+                P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
+            P.figure(42)
+            P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5+CST_MANU,color=colors[sn],linewidth=3,alpha=1,zorder=self.Av[sn])
+            CST_MANU+=0.2
+            P.figure(1)
+            P.subplot(2,1,1)
 
         P.text(6500,-3.7,'Observed spectra',fontsize=20)
-        P.text(6000,2.5,'Corrected spectra ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)',fontsize=20)
-
+        P.text(6000,2.5,'Corrected residuals ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)',fontsize=20)
+        scat = P.scatter(self.Av+2500,self.Av+2500,c=self.Av,cmap=P.cm.coolwarm)
+        ax_cbar1 = fig.add_axes([0.08, 0.92, 0.88, 0.025])
+        P.subplot(2,1,1)
+        cb = P.colorbar(scat, cax=ax_cbar1, orientation='horizontal')
+        cb.set_label('$A_{\lambda_0}$',fontsize=20, labelpad=-67)
         P.ylabel('Mag AB + cst',fontsize=20)
         P.ylim(-5,7)
         P.xticks([2500.,9500.],['toto','pouet'])
@@ -195,7 +201,11 @@ class SUGAR_plot:
         P.xlim(self.X[0]-60,self.X[-1]+60)
         P.ylim(0.0,0.62)
         P.legend()
-
+        P.figure(42)
+        P.gca().invert_yaxis()
+        P.ylabel('residuals + cst.',fontsize=20)
+        P.xlabel('wavelength [$\AA$]',fontsize=20)
+        
     def look_pca_residuals(self,i_th_eigenvector):
         
         Lam=self.dico['Lambda'][:,i_th_eigenvector]
@@ -341,6 +351,7 @@ class SUGAR_plot:
                 P.fill_between(self.X,self.alpha[:,correction]-self.alpha_err_Jackknife[:,correction],self.alpha[:,correction]+self.alpha_err_Jackknife[:,correction],color='b',alpha=0.7 )
 
             mean_effect=N.std(self.data[:,correction])*N.mean(abs(self.alpha[:,correction]))
+            print 'Mean effect correction%i:'%(correction+1), mean_effect
             P.plot(self.X,self.alpha[:,correction],'b',linewidth=3)#,label=r'Average effect (mag)=%.3f'%((mean_effect)))
             P.ylabel(r'$\alpha_{%i}(t=0,\lambda)$'%(correction+1),fontsize=16)
             P.xlabel('wavelength [$\AA$]',fontsize=16)
@@ -467,7 +478,7 @@ class SUGAR_plot:
         CCM31/=CCM31[Ind_med]
         CCM26/=CCM26[Ind_med]
         CCM14/=CCM14[Ind_med]
-        AVV=N.linspace(-0.5,1,20)       
+        AVV=N.linspace(-0.7,1.3,20)       
         #for X_Bin in range(len(self.X)):
         #    slopes_star[X_Bin]=(slopes[X_Bin]/slopes[BIN])
         
@@ -496,8 +507,7 @@ class SUGAR_plot:
   
 
         P.errorbar(Av,MAG[:,Bin],linestyle='',xerr=None,yerr=N.sqrt(self.Y_build_error[:,Bin]),ecolor='blue',alpha=0.7,marker='.',zorder=0)
-        scat=P.scatter(Av,MAG[:,Bin],zorder=100,s=50,c='b')
-            
+        scat=P.scatter(Av,MAG[:,Bin],zorder=100,s=50,c=Av,cmap=P.cm.coolwarm)
         P.plot(AVV,slopes[Bin]*AVV,'r',label='$\gamma_{%i\AA}$'%(self.X[Bin]),lw=3)
         P.plot(AVV,CCM31[Bin]*AVV,'k--',linewidth=3,label='CCM $(R_V=3.1)$')
         P.plot(AVV,CCM26[Bin]*AVV,'b--',linewidth=3,label='CCM $(R_V=2.7)$')
@@ -506,7 +516,7 @@ class SUGAR_plot:
         P.xlabel('$A_{\lambda_0}$',fontsize=20)
         P.text(-0.3,1.3,r'$\lambda=%i \AA$'%(self.X[Bin]),fontsize=20)
         P.ylim(min(MAG[:,Bin])-0.3,max(MAG[:,Bin])+0.3)
-        P.xlim(-0.6,1.1)
+        P.xlim(-0.6,1.2)
         #gca().invert_yaxis()
         P.legend(loc=4)
 
@@ -766,10 +776,10 @@ if __name__=='__main__':
     #plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])#,dic='vec_emfa_residual.pkl')
     #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
-    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl')
+    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_without_SNF20061108_001.pkl')
     #SP.plot_bin_Av_slope(42)
     #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
-    #SP.plot_spectrum_corrected()
+    SP.plot_spectrum_corrected()
     #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
-    SP.plot_spectral_variability(name_fig=None)
+    #SP.plot_spectral_variability(name_fig=None)
 
