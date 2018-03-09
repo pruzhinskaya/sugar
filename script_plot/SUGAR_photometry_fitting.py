@@ -44,15 +44,15 @@ def plot_filter_PF(WRITE=False):
     ax1.plot(X,Y,'k',linewidth=3,label='PTF09dnl @ max')
     #ax1.plot(X,-Y-5,'b',linewidth=4,label='B filter')
     ax1.set_xlabel('wavelength $[\AA]$',fontsize=20)
-    ax1.set_xlim(3300,9200)
+    ax1.set_xlim(3250,9200)
     ax1.set_ylim(0,0.65)
     ax1.set_ylabel(r'Flux [erg s$^{-1}$ cm$^{-2}$ $\AA^{-1}$]',fontsize=20)
     ax1.legend(fontsize=20)
-    U_PFL=N.linspace(3360,4048.2,1000)
-    B_SNf=N.linspace(4048.2,4877.3,1000)
-    V_SNf=N.linspace(4877.3,5876.3,1000)
-    R_SNf=N.linspace(5876.3,7079.9,1311)
-    I_PFL=N.linspace(7079.9,8530,931)
+    U_PFL=N.linspace(3300.,3978.0,1000)
+    B_SNf=N.linspace(3978.0,4795.3,1000)
+    V_SNf=N.linspace(4795.3,5780.6,1000)
+    R_SNf=N.linspace(5780.6,6968.3,1311)
+    I_PFL=N.linspace(6968.3,8400.,931)
 
     OneB=N.ones(len(B_SNf))
     OneV=N.ones(len(V_SNf))
@@ -72,14 +72,14 @@ def plot_filter_PF(WRITE=False):
     ax2.fill_between(I_PFL,0*OneI,OneI,color='k',alpha=0.5 )
     ax2.set_ylim(0,1.15)
     ax2.set_ylabel('Filters transmission',fontsize=20)
-    ax2.set_xlim(3300,9200)
+    ax2.set_xlim(3250,9200)
     p1 = P.Rectangle((0, 0), 1, 1, fc="purple")
     p2 = P.Rectangle((0, 0), 1, 1, fc="b")
     p3 = P.Rectangle((0, 0), 1, 1, fc="g")
     p4 = P.Rectangle((0, 0), 1, 1, fc="r")
     p5 = P.Rectangle((0, 0), 1, 1, fc="k")
 
-    ax2.legend([p1, p2, p3, p4, p5], ['$U_{S}$', '$B_{S}$','$V_{S}$','$R_{S}$','$I_{S}$'],fontsize=20,loc=4)
+    ax2.legend([p1, p2, p3, p4, p5], ['$\hat{U}$', '$\hat{B}$','$\hat{V}$','$\hat{R}$','$\hat{I}$'],fontsize=20,loc=4)
   
     
     P.show()
@@ -164,12 +164,16 @@ class build_SUGAR_ligh_curves:
 
     def build_light_curves(self,BEST_PART=True):
 
-        
-        U_PFL=N.linspace(3360,4048.2,1000)
-        B_SNf=N.linspace(4048.2,4877.3,1000)
-        V_SNf=N.linspace(4877.3,5876.3,1000)
-        R_SNf=N.linspace(5876.3,7079.9,1311)
-        I_PFL=N.linspace(7079.9,8530,931)
+        U_PFL=N.linspace(3300.,3978.0,1000)
+        B_SNf=N.linspace(3978.0,4795.3,1000)
+        V_SNf=N.linspace(4795.3,5780.6,1000)
+        R_SNf=N.linspace(5780.6,6968.3,1311)
+        I_PFL=N.linspace(6968.3,8400.,931)
+        #U_PFL=N.linspace(3360,4048.2,1000)
+        #B_SNf=N.linspace(4048.2,4877.3,1000)
+        #V_SNf=N.linspace(4877.3,5876.3,1000)
+        #R_SNf=N.linspace(5876.3,7079.9,1311)
+        #I_PFL=N.linspace(7079.9,8530,931)
 
 
         self.B_max=-999
@@ -463,7 +467,7 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
     
     COLOR=['b','g','r','purple','k']
     cst=[0,-2.1,-4,+2.3,-6]
-    Label=['$B_{S} \ \pm 1 \sigma$','$V_{S} \ %i \ \pm 1 \sigma$'%(cst[1]),'$R_{S} \ %i \ \pm 1 \sigma$'%(cst[2]),'$U_{S} \ +%i \ \pm 1 \sigma$'%(cst[3]),'$I_{S} \ %i \ \pm 1 \sigma$'%(cst[4])]
+    Label=['$\hat{B} \ \pm 1 \sigma$','$\hat{V} \ %i \ \pm 1 \sigma$'%(cst[1]),'$\hat{R} \ %i \ \pm 1 \sigma$'%(cst[2]),'$\hat{U} \ +%i \ \pm 1 \sigma$'%(cst[3]),'$\hat{I} \ %i \ \pm 1 \sigma$'%(cst[4])]
     TITLE=['q1','q2','q3','Av']
 
     for par in range(4):
@@ -502,16 +506,16 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
         #P.subplots_adjust(left=0.07, right=0.97,bottom=0.05,top=0.97)
 
         #U-B
-        P.plot(Time,MEAN[3]-MEAN[0],'purple',linewidth=2,label='$\left(U_{S}-B_{S}\\right) \pm 1 \sigma$')
+        P.plot(Time,MEAN[3]-MEAN[0],'purple',linewidth=2,label='$\left(\hat{U}-\hat{B}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[3]-BVR_sigma_moins[0],BVR_sigma_plus[3]-BVR_sigma_plus[0],color='purple',alpha=0.5 )
         #B-V
-        P.plot(Time,MEAN[0]-MEAN[1],'b',linewidth=2,label='$\left(B_{S}-V_{S}\\right) \pm 1 \sigma$')
+        P.plot(Time,MEAN[0]-MEAN[1],'b',linewidth=2,label='$\left(\hat{B}-\hat{V}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[0]-BVR_sigma_moins[1],BVR_sigma_plus[0]-BVR_sigma_plus[1],color='b',alpha=0.5 )
         #V-I
-        P.plot(Time,MEAN[1]-MEAN[2],'g',linewidth=2,label='$\left(V_{S}-R_{S}\\right) \pm 1 \sigma$')
+        P.plot(Time,MEAN[1]-MEAN[2],'g',linewidth=2,label='$\left(\hat{V}-\hat{R}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[1]-BVR_sigma_moins[2],BVR_sigma_plus[1]-BVR_sigma_plus[2],color='g',alpha=0.5 )
         #R-I
-        P.plot(Time,MEAN[2]-MEAN[4],'r',linewidth=2,label='$\left(R_{S}-I_{S}\\right) \pm 1 \sigma$')
+        P.plot(Time,MEAN[2]-MEAN[4],'r',linewidth=2,label='$\left(\hat{R}-\hat{I}\\right) \pm 1 \sigma$')
         P.fill_between(Time,BVR_sigma_moins[2]-BVR_sigma_moins[4],BVR_sigma_plus[2]-BVR_sigma_plus[4],color='r',alpha=0.5 )
 
         P.ylabel('Color (mag)',fontsize=18)

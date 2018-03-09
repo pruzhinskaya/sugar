@@ -53,8 +53,8 @@ class emfa_plot:
         sil = ['pEWCa II H&K', r'pEWSi II $\lambda$4131', 'pEWMg II',
                'pEWFe $\lambda$4800', 'pEWS II W', 'pEWSi II $\lambda$5972',
                'pEWSi II $\lambda$6355', 'pEWO I $\lambda$7773', 'pEWCa II IR',
-               'VSi II $\lambda$4131','VWS II $\lambda$5454','VWS II $\lambda$5640',
-               'VSi II $\lambda$6355']
+               '$\lambda$ VSi II $\lambda$4131','$\lambda$ VWS II $\lambda$5454',
+               '$\lambda$ VWS II $\lambda$5640','$\lambda$ VSi II $\lambda$6355']
 
         data = self.si_norm
         err = self.si_norm_err
@@ -98,6 +98,7 @@ class emfa_plot:
         if noise:
             val_100 = (self.val/(len(self.val)))*100.
             noise_level = (len(self.val) - np.sum(self.val)) / len(self.val) * 100.
+            print 'Noise level emfa:', noise_level
             plt.plot([xlim[0],xlim[1]],noise_level*np.ones(2),'r',linewidth=3,label='noise level')
         
         plt.xticks(x_axis)
@@ -129,8 +130,8 @@ class emfa_plot:
         nsil = ['pEWCa II H&K', r'pEWSi II $\lambda$4131', 'pEWMg II',
                 'pEWFe $\lambda$4800', 'pEWS II W', 'pEWSi II $\lambda$5972',
                 'pEWSi II $\lambda$6355', 'pEWO I $\lambda$7773', 'pEWCa II IR',
-                'VSi II $\lambda$4131','VWS II $\lambda$5454','VWS II $\lambda$5640',
-                'VSi II $\lambda$6355']
+                '$\lambda$ VSi II $\lambda$4131','$\lambda$ VWS II $\lambda$5454',
+                '$\lambda$ VWS II $\lambda$5640','$\lambda$ VSi II $\lambda$6355']
 
         dic_corr_vec = {}
         dic_corr_vece = {}

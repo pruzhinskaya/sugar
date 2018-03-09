@@ -472,11 +472,15 @@ class SUGAR_plot:
     
         
         CCM31=Astro.Extinction.extinctionLaw(self.X,Rv=3.1,law='CCM89')
-        CCM26=Astro.Extinction.extinctionLaw(self.X,Rv=2.7,law='CCM89')
+        CCM26=Astro.Extinction.extinctionLaw(self.X,Rv=self.Rv,law='CCM89')
+        CCMplus=Astro.Extinction.extinctionLaw(self.X,Rv=self.Rv+0.5,law='CCM89')
+        CCMminus=Astro.Extinction.extinctionLaw(self.X,Rv=self.Rv-0.5,law='CCM89')
         CCM14=Astro.Extinction.extinctionLaw(self.X,Rv=2.0,law='CCM89')
         Ind_med=(len(self.X)/2)-1
         CCM31/=CCM31[Ind_med]
         CCM26/=CCM26[Ind_med]
+        CCMplus/=CCMplus[Ind_med]
+        CCMminus/=CCMminus[Ind_med]
         CCM14/=CCM14[Ind_med]
         AVV=N.linspace(-0.7,1.3,20)       
         #for X_Bin in range(len(self.X)):
@@ -509,23 +513,25 @@ class SUGAR_plot:
         P.errorbar(Av,MAG[:,Bin],linestyle='',xerr=None,yerr=N.sqrt(self.Y_build_error[:,Bin]),ecolor='blue',alpha=0.7,marker='.',zorder=0)
         scat=P.scatter(Av,MAG[:,Bin],zorder=100,s=50,c=Av,cmap=P.cm.coolwarm)
         P.plot(AVV,slopes[Bin]*AVV,'r',label='$\gamma_{%i\AA}$'%(self.X[Bin]),lw=3)
-        P.plot(AVV,CCM31[Bin]*AVV,'k--',linewidth=3,label='CCM $(R_V=3.1)$')
-        P.plot(AVV,CCM26[Bin]*AVV,'b--',linewidth=3,label='CCM $(R_V=2.7)$')
-        P.plot(AVV,CCM14[Bin]*AVV,'k-.',linewidth=3,label='CCM $(R_V=2.0)$')
+        #P.plot(AVV,CCM31[Bin]*AVV,'k--',linewidth=3,label='CCM $(R_V=3.1)$')
+        P.plot(AVV,CCM26[Bin]*AVV,'b--',linewidth=3,label='CCM $(R_V=%.1f\pm0.5)$'%(self.Rv))
+        P.fill_between(AVV,CCMminus[Bin]*AVV,CCMplus[Bin]*AVV,color='b',alpha=0.3)
+        #P.plot(AVV,CCM14[Bin]*AVV,'k-.',linewidth=3,label='CCM $(R_V=2.0)$')
         P.ylabel('$M(t=0,\lambda)-M_0(t=0,\lambda) - \sum_{i=1}^{i=3} \\alpha_i(0,\lambda) q_i$',fontsize=18)
         P.xlabel('$A_{\lambda_0}$',fontsize=20)
         P.text(-0.3,1.3,r'$\lambda=%i \AA$'%(self.X[Bin]),fontsize=20)
         P.ylim(min(MAG[:,Bin])-0.3,max(MAG[:,Bin])+0.3)
-        P.xlim(-0.6,1.2)
+        P.xlim(-0.6,1.19)
         #gca().invert_yaxis()
         P.legend(loc=4)
 
         P.subplot(2,1,1)
-        P.scatter(self.X[Bin],slopes[Bin],c='r',marker='o',s=100)
-        P.plot(self.X,slopes,'r',label= '$\gamma_{\lambda}$',lw=3)
-        P.plot(self.X,CCM31,'k-.',linewidth=3,label= 'CCM $(R_V=3.1)$')
-        P.plot(self.X,CCM26,'b--',linewidth=3,label= 'CCM $(R_V=2.7)$')
-        P.plot(self.X,CCM14,'k--',linewidth=3,label= 'CCM $(R_V=2.0)$')
+        P.plot(self.X,slopes,'r',label= '$\gamma_{\lambda}$',lw=3,zorder=0)
+        #P.plot(self.X,CCM31,'k-.',linewidth=3,label= 'CCM $(R_V=3.1)$')
+        P.plot(self.X,CCM26,'b--',linewidth=3,label= 'CCM $(R_V=%.1f\pm0.5)$'%(self.Rv),zorder=0)
+        P.fill_between(self.X,CCMminus,CCMplus,color='b',alpha=0.3)
+        P.scatter(self.X[Bin],slopes[Bin],c='k',marker='o',s=200,zorder=10)
+        #P.plot(self.X,CCM14,'k--',linewidth=3,label= 'CCM $(R_V=2.0)$')
         P.ylabel(r'$(\partial A_{\lambda}$ / $\partial A_V)$',fontsize=20)
         P.xlabel('wavelength [$\AA$]',fontsize=20)
         P.ylim(0.35,2.1)
@@ -776,10 +782,10 @@ if __name__=='__main__':
     #plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])#,dic='vec_emfa_residual.pkl')
     #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
-    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_without_SNF20061108_001.pkl')
-    #SP.plot_bin_Av_slope(42)
+    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey.pkl')
+    SP.plot_bin_Av_slope(42)
     #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
-    SP.plot_spectrum_corrected()
+    #SP.plot_spectrum_corrected()
     #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
     #SP.plot_spectral_variability(name_fig=None)
 

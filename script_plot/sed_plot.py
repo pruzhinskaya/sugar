@@ -342,14 +342,14 @@ class SUGAR_plot:
 
                 Y2_pos.append(M0[i*NBIN:(i+1)*NBIN][-1]-CST)
 
-                ax1.plot(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,'b')
+                ax1.plot(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,'k')
 
                 
                 y_moins=M0[i*NBIN:(i+1)*NBIN]-ALPHA[i*NBIN:(i+1)*NBIN]*(N.mean(self.data[:,comp])+N.sqrt(N.var(self.data[:,comp])))
                 y_plus=M0[i*NBIN:(i+1)*NBIN]+ALPHA[i*NBIN:(i+1)*NBIN]*(N.mean(self.data[:,comp])+N.sqrt(N.var(self.data[:,comp])))
 
-                ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_plus-CST,color='m',alpha=0.7 )
-                ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_moins-CST,color='g',alpha=0.7)
+                ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_plus-CST,color='k',alpha=0.8 )
+                ax1.fill_between(X[i*NBIN:(i+1)*NBIN],M0[i*NBIN:(i+1)*NBIN]-CST,y_moins-CST,color='grey',alpha=0.7)
 
                 if i==0:
                     CST-=1.7
@@ -361,8 +361,8 @@ class SUGAR_plot:
         ax1.set_xlim(3300,8620)
         ax1.set_ylim(-1,14.8)
         ax1.set_xlabel('wavelength $[\AA]$',fontsize=20)
-        p1 = P.Rectangle((0, 0), 1, 1, fc="magenta")
-        p2 = P.Rectangle((0, 0), 1, 1, fc="green")
+        p1 = P.Rectangle((0, 0), 1, 1, fc="k")
+        p2 = P.Rectangle((0, 0), 1, 1, fc="grey")
         ax1.legend([p1, p2], ['+1$\sigma_{q_%i}$'%(comp+1), '-1$\sigma_{q_%i}$'%(comp+1)],loc=4)
         P.gca().invert_yaxis()
 
@@ -763,7 +763,7 @@ class residual_plot:
         ax2.yaxis.set_ticklabels(Y2_label)
         ax2.set_ylim(ax2.get_ylim()[::-1])
 
-        return RESIDUAL_SUGAR, RESIDUAL_SUGAR_1, RESIDUAL_SUGAR_2, RESIDUAL_SALT2, ERROR_SPECTRA
+        return RESIDUAL_SUGAR, RESIDUAL_SUGAR_1, RESIDUAL_SUGAR_2, RESIDUAL_SALT2, ERROR_SPECTRA, Phase
 
 
 
@@ -788,7 +788,7 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
 
         i=0
         for sn in dic.keys():
-            sucre, sucre_1, sucre_2, sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=30)
+            sucre, sucre_1, sucre_2, sel, res_error, phase = rp.plot_spectra_reconstruct_residuals(sn,T_min=-12,T_max=48)
             residual_sel.append(sel)
             residual_sucre.append(sucre)
             residual_sucre_1.append(sucre_1)
@@ -848,7 +848,109 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
     P.xlabel('wavelength $[\AA]$',fontsize=20)
     P.ylabel('wRMS (mag)',fontsize=20)
     P.ylim(0,0.43)
-    P.xlim(3300,8700)
+    P.xlim(3200,8700)
+    P.legend(bbox_to_anchor=(1.01, 0.7), loc=2, borderaxespad=0.,fontsize=16)
+    P.show()
+
+def wRMS_sed_time_sugar_salt(WRMS='wrms.pkl'):
+
+    if WRMS is None:
+
+        dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
+    
+        rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
+                           '../sugar/data_output/SUGAR_model_v1.asci',
+                           '../sugar/data_output/sugar_parameters.pkl',
+                           '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl',
+                           dic_salt = '../sugar/data_input/file_pf_bis.pkl')
+
+        residual_sel = []
+        residual_sucre = []
+        residual_sucre_1 = []
+        residual_sucre_2 = []    
+        residual_error = []
+        phase = [] 
+        nspectra = 0
+
+        i=0
+        for sn in dic.keys():
+            sucre, sucre_1, sucre_2, sel, res_error, phas = rp.plot_spectra_reconstruct_residuals(sn,T_min=-12,T_max=48)
+            residual_sel.append(sel)
+            residual_sucre.append(sucre)
+            residual_sucre_1.append(sucre_1)
+            residual_sucre_2.append(sucre_2)
+            residual_error.append(res_error)
+            phase.append(phas)
+            nspectra += len(N.array(residual_sucre[i])[:,0])
+            i+=1
+        P.close('all')
+
+        binning_phase = N.linspace(-12,48,21)
+
+        res_sel = []
+        res_sucre = []
+        res_sucre_1 = []
+        res_sucre_2 = []
+        res_err = []
+
+        dic = cPickle.load(open('../sugar/data_input/spectra_snia.pkl'))
+        wave = dic['PTF09dnl']['0']['X']
+        
+        for Bin in range(21):
+            print Bin
+            res_sel.append([])
+            res_sucre.append([])
+            res_sucre_1.append([])
+            res_sucre_2.append([])
+            res_err.append([])
+            for sn in range(len(phase)):
+                for ph in range(len(phase[sn])):
+                    if abs(phase[sn][ph]-binning_phase[Bin])<1.5:
+                        [res_sel[Bin].append(residual_sel[sn][ph][wav]) for wav in range(len(wave))]
+                        [res_sucre[Bin].append(residual_sucre[sn][ph][wav]) for wav in range(len(wave))]
+                        [res_sucre_1[Bin].append(residual_sucre_1[sn][ph][wav]) for wav in range(len(wave))]
+                        [res_sucre_2[Bin].append(residual_sucre_2[sn][ph][wav]) for wav in range(len(wave))]
+                        [res_err[Bin].append(residual_error[sn][ph][wav]) for wav in range(len(wave))]
+
+        wrms_sel = N.zeros(21)
+        wrms_sucre = N.zeros(21)
+        wrms_sucre_1 = N.zeros(21)
+        wrms_sucre_2 = N.zeros(21)
+
+        for Bin in range(21):
+            wrms_sel[Bin] = N.sqrt(N.sum((N.array(res_sel[Bin])**2)/(N.array(res_err[Bin])**2)) / N.sum(1./(N.array(res_err[Bin])**2)))
+            wrms_sucre[Bin] = N.sqrt(N.sum((N.array(res_sucre[Bin])**2)/(N.array(res_err[Bin])**2)) / N.sum(1./(N.array(res_err[Bin])**2)))
+            wrms_sucre_1[Bin] = N.sqrt(N.sum((N.array(res_sucre_1[Bin])**2)/(N.array(res_err[Bin])**2)) / N.sum(1./(N.array(res_err[Bin])**2)))
+            wrms_sucre_2[Bin] = N.sqrt(N.sum((N.array(res_sucre_2[Bin])**2)/(N.array(res_err[Bin])**2)) / N.sum(1./(N.array(res_err[Bin])**2)))
+        
+        dic = {'phase':binning_phase,
+               'wrms_sel':wrms_sel,
+               'wrms_sucre':wrms_sucre,
+               'wrms_sucre_1':wrms_sucre_1,
+               'wrms_sucre_2':wrms_sucre_2}
+
+        File=open('wrms_time.pkl','w')
+        cPickle.dump(dic,File)
+        File.close()
+
+    else:
+        dic = cPickle.load(open(WRMS))
+        binning_phase = dic['phase']
+        wrms_sel = dic['wrms_sel']
+        wrms_sucre = dic['wrms_sucre']
+        wrms_sucre_1 = dic['wrms_sucre_1']
+        wrms_sucre_2 = dic['wrms_sucre_2']
+
+    P.figure(figsize=(16,6))
+    P.subplots_adjust(top=0.98,right=0.7,left=0.05,bottom=0.15)
+    P.plot(binning_phase,wrms_sel,'r',linewidth=5,label='SALT2.4 ($X_0$ + $X_1$ + $C$)')
+    P.plot(binning_phase,wrms_sucre_1,'b-.',linewidth=3,label='SUGAR ($\Delta M_{grey}$ + $q_1$ + $A_V$)')
+    P.plot(binning_phase,wrms_sucre_2,'b--',linewidth=3,label='SUGAR ($\Delta M_{grey}$ +$q_1$ + $q_2$ + $A_V$)')
+    P.plot(binning_phase,wrms_sucre,'b',linewidth=5,label='SUGAR ($\Delta M_{grey}$ +$q_1$ + $q_2$ + $q_3$ + $A_V$)')
+    P.xlabel('Phase (day)',fontsize=20)
+    P.ylabel('wRMS (mag)',fontsize=20)
+    P.ylim(0,0.43)
+    P.xlim(-13,50)
     P.legend(bbox_to_anchor=(1.01, 0.7), loc=2, borderaxespad=0.,fontsize=16)
     P.show()
 
@@ -862,15 +964,16 @@ if __name__=='__main__':
 
     ##plot_corr_sucre()
     
-    ##wRMS_sed_sugar_salt(WRMS='wrms.pkl')
+    #wRMS_sed_sugar_salt(WRMS=None)
+    wRMS_sed_time_sugar_salt(WRMS='wrms_time.pkl')
     
-    SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
-    SED.plot_spectrophtometric_effec_time(comp=0)
-    SED.plot_spectrophtometric_effec_time(comp=1)
-    SED.plot_spectrophtometric_effec_time(comp=2)
+    #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
+    #SED.plot_spectrophtometric_effec_time(comp=0)
+    #SED.plot_spectrophtometric_effec_time(comp=1)
+    #SED.plot_spectrophtometric_effec_time(comp=2)
 
 
-    Compare_TO_SUGAR_parameter()
+    #Compare_TO_SUGAR_parameter()
 
     #dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
@@ -888,8 +991,8 @@ if __name__=='__main__':
     #sn = 'SN2012cu'
     #for sn in dic.keys():
     #rp.plot_spectra_movie(sn)
-    
-    #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=28)
+    #sn = 'SN2007kk'
+    #rp.plot_spectra_reconstruct(sn,T_min=-11,T_max=47)
     
     #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
     #sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
