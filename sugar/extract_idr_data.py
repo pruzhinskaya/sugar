@@ -225,7 +225,7 @@ class build_spectral_data:
             spectra = copy.deepcopy(self.dico_spectra[sn])
             for j,pause in enumerate(spectra.keys()):
                 print 'processing ' + sn + ' pause ' + pause
-                spectra[pause]['Y'] -= sugar.distance_modulus(spectra[pause]['z_helio'], spectra[pause]['z_cmb'])
+                spectra[pause]['Y'] -= sugar.distance_modulus(spectra[pause]['z_helio'], spectra[pause]['z_cmb']) - (5.*np.log10(1.+spectra[pause]['z_helio']))
                 spectra[pause].update({'Y_flux':go_to_flux(spectra[pause]['X'],copy.deepcopy(spectra[pause]['Y']))})
             dic_spectra.update({sn:spectra})
         self.dico_spectra = dic_spectra
@@ -367,10 +367,10 @@ if __name__=="__main__":
     bsd.to_ab_mag()
     bsd.cosmology_corrected()
     bsd.reorder_and_clean()
-    bsd.write_pkl('data_input/spectra_snia.pkl')
+    bsd.write_pkl('data_input/spectra_snia_test.pkl')
     bsd.control_plot()
 
-    bmd = build_at_max_data('data_input/spectra_snia.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
+    bmd = build_at_max_data('data_input/spectra_snia_test.pkl', 'data_input/phrenology_2016_12_01_CABALLOv1.pkl')
     bmd.select_spectra_at_max()
     bmd.select_spectral_indicators()
-    bmd.write_pkl('data_input/spectra_and_si_at_max.pkl')
+    bmd.write_pkl('data_input/spectra_and_si_at_max_test.pkl')
