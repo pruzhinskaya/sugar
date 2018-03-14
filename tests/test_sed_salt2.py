@@ -23,7 +23,8 @@ for sn in for_pf_bis.keys():
               c=meta[sn]['salt2.Color'])
     wave = copy.deepcopy(for_pf_bis[sn]['0']['X'])*(1+meta[sn]['host.zhelio'])
     for phase in for_pf_bis[sn].keys():
-        for_pf_bis[sn][phase].update({'PF_flux':model.flux(for_pf_bis[sn][phase]['phase_salt2'],wave)*(1+meta[sn]['host.zhelio'])**3})
+        #for_pf_bis[sn][phase].update({'PF_flux':model.flux(for_pf_bis[sn][phase]['phase_salt2'],wave)*(1+meta[sn]['host.zhelio'])**3})
+        for_pf_bis[sn][phase].update({'PF_flux':model.flux(for_pf_bis[sn][phase]['phase_salt2'],wave)*(1+meta[sn]['host.zhelio'])**2})
         
 
 File = open('../sugar/data_input/file_pf_bis.pkl','w')

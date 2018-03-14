@@ -150,8 +150,8 @@ class SUGAR_plot:
         indice = N.linspace(0,len(self.Av)-1,len(self.Av)).astype(int)
         Av, indice = zip(*sorted(zip(self.Av, indice)))
         colors = P.cm.coolwarm(self.Av)
-
-        P.figure(42)
+        Grey_scatter = N.zeros(len(self.Av))
+        #P.figure(42)
         
         fig = P.figure(1,figsize=(12,12))
         P.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.9,hspace=0.001)
@@ -168,11 +168,12 @@ class SUGAR_plot:
                 P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
             else:
                 P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5,color=colors[sn],linewidth=3,alpha=0.5,zorder=self.Av[sn])
-            P.figure(42)
-            P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5+CST_MANU,color=colors[sn],linewidth=3,alpha=1,zorder=self.Av[sn])
-            CST_MANU+=0.2
-            P.figure(1)
-            P.subplot(2,1,1)
+            #P.figure(42)
+            #P.plot(self.X,Mag_all_sn[sn]-self.M0+N.mean(self.M0)+22.5+CST_MANU,color=colors[sn],linewidth=3,alpha=1,zorder=self.Av[sn])
+            #Grey_scatter[sn] = N.average(Mag_all_sn[sn]-self.M0, weights = 1./Mag_all_sn_var[sn])
+            #CST_MANU+=0.2
+            #P.figure(1)
+            #P.subplot(2,1,1)
 
         P.text(6500,-3.7,'Observed spectra',fontsize=20)
         P.text(6000,2.5,'Corrected residuals ($q_1$, $q_2$, $q_3$, $A_{\lambda_0}$)',fontsize=20)
@@ -201,10 +202,27 @@ class SUGAR_plot:
         P.xlim(self.X[0]-60,self.X[-1]+60)
         P.ylim(0.0,0.62)
         P.legend()
-        P.figure(42)
-        P.gca().invert_yaxis()
-        P.ylabel('residuals + cst.',fontsize=20)
-        P.xlabel('wavelength [$\AA$]',fontsize=20)
+        #P.figure(42)
+        #P.gca().invert_yaxis()
+        #P.ylabel('residuals + cst.',fontsize=20)
+        #P.xlabel('wavelength [$\AA$]',fontsize=20)
+
+
+        A = sugar.load_data_sugar()
+        A.load_salt2_data()
+        zhelio = []
+        for sn in range(len(self.sn_name)):
+            for sn2 in range(len(A.sn_name)):
+                if A.sn_name[sn2] == self.sn_name[sn]:
+                    zhelio.append(A.zhelio[sn2])
+        zhelio = N.array(zhelio)
+
+        #P.figure()
+        #P.scatter(5.*N.log10(1+zhelio), Grey_scatter)
+        #P.ylabel('weighted average residuals @ max light (mag)',fontsize=20)
+        #P.xlabel('5 * $\log_{10}(1+z_{helio})$',fontsize=20) 
+        #P.ylim(-0.3,0.3)
+        #P.xlim(0,0.25)
         
     def look_pca_residuals(self,i_th_eigenvector):
         
@@ -275,15 +293,15 @@ class SUGAR_plot:
             y_moins[Bin]=self.M0[Bin]+19.2-Lam[Bin,correction-1]*(mean(Z[:,correction-1])+sqrt(var(Z[:,correction-1])))
             y_plus[Bin]=self.M0[Bin]+19.2+Lam[Bin,correction-1]*(mean(Z[:,correction-1])+sqrt(var(Z[:,correction-1])))
 
-        fill_between(self.X,self.M0+19.2,y_plus,color='m',alpha=0.7 )
-        fill_between(self.X,y_moins,self.M0+19.2,color='g',alpha=0.7)
+        fill_between(self.X,self.M0+19.2,y_plus,color='k',alpha=0.8 )
+        fill_between(self.X,y_moins,self.M0+19.2,color='grey',alpha=0.7)
         p3 = plot(self.X,self.M0+19.2,'b',label='toto')
         ylim(-0.3,1.5)
         gca().invert_yaxis()
         ylabel('$M_0(t=0,\lambda) + cst$')
         title('Mean spectrum with $\pm$1$\sigma$ variation (eigenvector %i)'%(correction))
-        p1 = Rectangle((0, 0), 1, 1, fc="magenta")
-        p2 = Rectangle((0, 0), 1, 1, fc="green")
+        p1 = Rectangle((0, 0), 1, 1, fc="k")
+        p2 = Rectangle((0, 0), 1, 1, fc="grey")
         legend([p1, p2], ['+1$\sigma$', '-1$\sigma$'])
         xticks([2500.,9500.],['toto','pouet'])
         xlim(self.X[0]-60,self.X[-1]+60)
@@ -294,7 +312,7 @@ class SUGAR_plot:
 #            mean_effect=(1./len(self.X))*sqrt(N.sum(self.alpha[:,correction]*self.alpha[:,correction]))                                                    
         mean_effect=std(Z[:,correction-1])*mean(abs(Lam[:,correction-1]))
          
-        plot(self.X,Lam[:,correction],'b',label=r'Mean effect (mag)=%.3f'%((mean_effect)))
+        plot(self.X,Lam[:,correction],'k',label=r'Mean effect (mag)=%.3f'%((mean_effect)))
         ylabel(r'$\Lambda_{%i}(\lambda)$'%(correction))
         xlabel('wavelength [$\AA$]')
         #ylim(MIN[correction],MAX[correction])
@@ -332,15 +350,15 @@ class SUGAR_plot:
                 y_moins[Bin]=self.M0[Bin]+19.2-self.alpha[Bin,correction]*(N.mean(self.data[:,correction])+N.sqrt(N.var(self.data[:,correction])))
                 y_plus[Bin]=self.M0[Bin]+19.2+self.alpha[Bin,correction]*(N.mean(self.data[:,correction])+N.sqrt(N.var(self.data[:,correction])))
 
-            P.fill_between(self.X,self.M0+19.2,y_plus,color='m',alpha=0.7 )
-            P.fill_between(self.X,y_moins,self.M0+19.2,color='g',alpha=0.7)
-            p3 = P.plot(self.X,self.M0+19.2,'b',linewidth=2,label='toto')
-            P.ylim(-0.6,1.4)
+            P.fill_between(self.X,self.M0+19.2,y_plus,color='k',alpha=0.8 )
+            P.fill_between(self.X,y_moins,self.M0+19.2,color='grey',alpha=0.7)
+            p3 = P.plot(self.X,self.M0+19.2,'k',linewidth=2,label='toto')
+            P.ylim(-0.45,1.59)
             P.gca().invert_yaxis()
             P.ylabel('$M_0(t=0,\lambda) +$ cst. (mag)',fontsize=16)
             P.title(r'Average spectrum with $\pm$1$\sigma$ variation ($\alpha_{%i}(t=0,\lambda)$)'%(correction+1))
-            p1 = P.Rectangle((0, 0), 1, 1, fc="magenta")
-            p2 = P.Rectangle((0, 0), 1, 1, fc="green")
+            p1 = P.Rectangle((0, 0), 1, 1, fc="k")
+            p2 = P.Rectangle((0, 0), 1, 1, fc="grey")
             P.legend([p1, p2], ['+1$\sigma$', '-1$\sigma$'])
             P.xticks([2500.,9500.],['toto','pouet'])
             P.xlim(self.X[0]-60,self.X[-1]+60)
@@ -352,7 +370,7 @@ class SUGAR_plot:
 
             mean_effect=N.std(self.data[:,correction])*N.mean(abs(self.alpha[:,correction]))
             print 'Mean effect correction%i:'%(correction+1), mean_effect
-            P.plot(self.X,self.alpha[:,correction],'b',linewidth=3)#,label=r'Average effect (mag)=%.3f'%((mean_effect)))
+            P.plot(self.X,self.alpha[:,correction],'k',linewidth=3)#,label=r'Average effect (mag)=%.3f'%((mean_effect)))
             P.ylabel(r'$\alpha_{%i}(t=0,\lambda)$'%(correction+1),fontsize=16)
             P.xlabel('wavelength [$\AA$]',fontsize=16)
             P.xlim(self.X[0]-60,self.X[-1]+60)
@@ -487,7 +505,7 @@ class SUGAR_plot:
         #    slopes_star[X_Bin]=(slopes[X_Bin]/slopes[BIN])
         
 
-        P.figure(figsize=(11,11))
+        P.figure(43,figsize=(11,11))
         P.subplots_adjust(left=0.12, bottom=0.07, right=0.99, top=0.995)
         MAG=copy.deepcopy(Mag_all_sn)
         
@@ -773,19 +791,19 @@ if __name__=='__main__':
     import os
     path = os.path.dirname(sugar.__file__)
     
-    lst_dic=[]
-    for i in range(5):
-        lst_dic.append('../sugar/data_output/sugar_paper_output/model_at_max_%i_eigenvector_without_grey.pkl'%(i+1))
+    #lst_dic=[]
+    #for i in range(5):
+    #    lst_dic.append('../sugar/data_output/sugar_paper_output/model_at_max_%i_eigenvector_without_grey.pkl'%(i+1))
     
     #plot_disp_eig(lst_dic)#,dic = 'disp_eig.pkl')
-    #P.savefig('plot_paper/residual_emfa_vectors_at_max.pdf')
+    #P.savefig('residual_emfa_vectors_at_max.pdf')
     #plot_vec_emfa(lst_dic,4,ALIGN=[-1,1,1,-1,-1])#,dic='vec_emfa_residual.pkl')
     #P.savefig('plot_paper/STD_choice_eigenvector.pdf')
     
-    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey.pkl')
+    SP=SUGAR_plot('../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl')
     SP.plot_bin_Av_slope(42)
-    #P.savefig('plot_paper/CCM_law_bin42.pdf')#,transparent=True)
-    #SP.plot_spectrum_corrected()
-    #P.savefig('plot_paper/all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
-    #SP.plot_spectral_variability(name_fig=None)
+    P.savefig('CCM_law_bin42.pdf')#,transparent=True)
+    SP.plot_spectrum_corrected()
+    P.savefig('all_spectrum_corrected_without_grey_with_3_eigenvector.pdf')
+    SP.plot_spectral_variability(name_fig=None)
 

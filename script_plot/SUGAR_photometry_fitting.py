@@ -452,6 +452,9 @@ def plot_light_curve(SN,BVR_data,BVR_phase,BVR_model,BVR_model_phase,BVR_model_o
 
 def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30):
 
+    alpha_plus = 0.9
+    alpha_minus = 0.4
+    
     x1=N.array([X1,0,0,0])
     x2=N.array([0,X2,0,0])
     x3=N.array([0,0,X3,0])
@@ -482,14 +485,19 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
         P.subplots_adjust(left=0.08, right=0.99,bottom=0.07,top=0.97,wspace=0.25)
         P.subplot(1,2,1)
         i=3
-        P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=0.5 )
+        P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],MEAN[2-i]+cst[2-i],color=COLOR[2-i],alpha=alpha_minus)
+        P.fill_between(Time,MEAN[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=alpha_plus)
         P.plot(Time,MEAN[2-i]+cst[2-i],COLOR[2-i],linewidth=2,label=Label[2-i])
+
         for i in range(3):
-            P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=0.5 )
+            P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],MEAN[2-i]+cst[2-i],color=COLOR[2-i],alpha=alpha_minus)
+            P.fill_between(Time,MEAN[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=alpha_plus)
             P.plot(Time,MEAN[2-i]+cst[2-i],COLOR[2-i],linewidth=2,label=Label[2-i])
 
+
         i=4
-        P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=0.5 )
+        P.fill_between(Time,BVR_sigma_moins[2-i]+cst[2-i],MEAN[2-i]+cst[2-i],color=COLOR[2-i],alpha=alpha_minus)
+        P.fill_between(Time,MEAN[2-i]+cst[2-i],BVR_sigma_plus[2-i]+cst[2-i],color=COLOR[2-i],alpha=alpha_plus)
         P.plot(Time,MEAN[2-i]+cst[2-i],COLOR[2-i],linewidth=2,label=Label[2-i])
 
         P.ylabel('BD17 mag + Const.',fontsize=18)
@@ -507,16 +515,23 @@ def plot_qi_effectlight_curve(SUGAR_model,Hyper,X1=4.46,X2=3.69,X3=1.36,AV=0.30)
 
         #U-B
         P.plot(Time,MEAN[3]-MEAN[0],'purple',linewidth=2,label='$\left(\hat{U}-\hat{B}\\right) \pm 1 \sigma$')
-        P.fill_between(Time,BVR_sigma_moins[3]-BVR_sigma_moins[0],BVR_sigma_plus[3]-BVR_sigma_plus[0],color='purple',alpha=0.5 )
+        P.fill_between(Time,BVR_sigma_moins[3]-BVR_sigma_moins[0],MEAN[3]-MEAN[0],color='purple',alpha=alpha_minus)
+        P.fill_between(Time,MEAN[3]-MEAN[0],BVR_sigma_plus[3]-BVR_sigma_plus[0],color='purple',alpha=alpha_plus)
+        
         #B-V
         P.plot(Time,MEAN[0]-MEAN[1],'b',linewidth=2,label='$\left(\hat{B}-\hat{V}\\right) \pm 1 \sigma$')
-        P.fill_between(Time,BVR_sigma_moins[0]-BVR_sigma_moins[1],BVR_sigma_plus[0]-BVR_sigma_plus[1],color='b',alpha=0.5 )
+        P.fill_between(Time,BVR_sigma_moins[0]-BVR_sigma_moins[1],MEAN[0]-MEAN[1],color='b',alpha=alpha_minus)
+        P.fill_between(Time,MEAN[0]-MEAN[1],BVR_sigma_plus[0]-BVR_sigma_plus[1],color='b',alpha=alpha_plus)
+        
         #V-I
         P.plot(Time,MEAN[1]-MEAN[2],'g',linewidth=2,label='$\left(\hat{V}-\hat{R}\\right) \pm 1 \sigma$')
-        P.fill_between(Time,BVR_sigma_moins[1]-BVR_sigma_moins[2],BVR_sigma_plus[1]-BVR_sigma_plus[2],color='g',alpha=0.5 )
+        P.fill_between(Time,BVR_sigma_moins[1]-BVR_sigma_moins[2],MEAN[1]-MEAN[2],color='g',alpha=alpha_minus)
+        P.fill_between(Time,MEAN[1]-MEAN[2],BVR_sigma_plus[1]-BVR_sigma_plus[2],color='g',alpha=alpha_plus)
+
         #R-I
         P.plot(Time,MEAN[2]-MEAN[4],'r',linewidth=2,label='$\left(\hat{R}-\hat{I}\\right) \pm 1 \sigma$')
-        P.fill_between(Time,BVR_sigma_moins[2]-BVR_sigma_moins[4],BVR_sigma_plus[2]-BVR_sigma_plus[4],color='r',alpha=0.5 )
+        P.fill_between(Time,BVR_sigma_moins[2]-BVR_sigma_moins[4],MEAN[2]-MEAN[4],color='r',alpha=alpha_minus)
+        P.fill_between(Time,MEAN[2]-MEAN[4],BVR_sigma_plus[2]-BVR_sigma_plus[4],color='r',alpha=alpha_plus)
 
         P.ylabel('Color (mag)',fontsize=18)
         P.legend(loc=4)

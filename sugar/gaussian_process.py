@@ -150,7 +150,7 @@ class load_data_bin_gp:
 class gp_sed:
     """Interpolate snia sed using gaussian process."""
     def __init__(self, path_input = path + '/data_input/',
-                 grid_interpolation=np.linspace(-12,42,19),
+                 grid_interpolation=np.linspace(-12,48,21),
                  svd_method=False, average=True, double_average=True):
         """
         Inteporlation of sed with gaussian process.

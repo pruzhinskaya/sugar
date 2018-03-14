@@ -8,11 +8,11 @@ class build_model:
         """
         run ma poule!
         """
-        # gaussian process part
+        #gaussian process part
 
-        ##gp = sugar.gp_sed(path_input = path_input, average=True, double_average=False)
-        ##gp.gaussian_process_regression()
-        ##gp.write_output(path_output = path_output_gp)
+        gp = sugar.gp_sed(path_input = path_input, average=True, double_average=False)
+        gp.gaussian_process_regression()
+        gp.write_output(path_output = path_output_gp)
 
         # emfa on spectral features
 

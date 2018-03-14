@@ -102,7 +102,7 @@ class Hubble_diagram:
         self.VAR=N.zeros(len(self.Y))
         A=N.array([1.,Alpha,Beta])
         for sn in range(len(self.Y)):
-            numerateur= (self.Y[sn] - MB + Alpha*self.data[sn,0] + Beta*self.data[sn,1]) - distance_modulus(self.zhelio[sn],self.zcmb[sn])
+            numerateur= (self.Y[sn] - MB + Alpha*self.data[sn,0] - Beta*self.data[sn,1]) - distance_modulus(self.zhelio[sn],self.zcmb[sn])
             denominateur=(A.dot(N.dot(self.data_cov[sn],A.reshape(1,len(A)).T)))+self.disp_intrinseque**2+self.dmz[sn]**2
             chi2[sn]=numerateur**2/denominateur
             self.residu[sn]=numerateur
@@ -119,7 +119,7 @@ class Hubble_diagram:
 
             return self.chi2
 
-        Find_param=minuit.Minuit(_compute_chi2, alpha=-0.15,beta=-2.9,mb=-19.1)
+        Find_param=minuit.Minuit(_compute_chi2, alpha=-0.15,beta=2.9,mb=-19.1)
             
         Find_param.migrad()
         self.Params=Find_param.values
@@ -134,7 +134,7 @@ class Hubble_diagram:
                     print 'je cherche de la dispersion pour la %i eme fois'%(calls+1)
                     self._compute_dispertion()
                     self.dispertion_intrinseque=copy.deepcopy(self.disp)
-                    Find_param=minuit.Minuit(_compute_chi2, alpha=-0.13,beta=-2.81,mb=0.)
+                    Find_param=minuit.Minuit(_compute_chi2, alpha=-0.13,beta=2.81,mb=-19.1)
                 
                     Find_param.migrad()
                     self.Params=Find_param.values
@@ -196,16 +196,123 @@ class hubble_salt2(Hubble_diagram):
         
         Hubble_diagram.__init__(self,lds.mb[Filtre],data,cov,lds.zhelio[Filtre],lds.zcmb[Filtre],lds.zerr[Filtre])
         self.Make_hubble_diagram()
+
+class Hubble_diagram_sugar:
+
+    def __init__(self,Phot,Data,Data_cov,z_err):
+
+        self.Y=copy.deepcopy(Phot)
+        self.dmz = N.zeros(len(z_err))
+        #self.dmz = 5/N.log(10) * N.sqrt(z_err**2 + 0.001**2) / zcmb
+
+        self.data = Data
+        self.data_cov = Data_cov
+        self.z_err = z_err
+
+        self.disp_intrinseque=0.
+        self.disp=0.
+        self.dof=len(self.Y)-3.
+
+        
+    def comp_chi2(self,alpha1,alpha2,alpha3,beta,MB):
+                    
+        chi2=N.zeros(len(self.Y))
+        self.residu=N.zeros(len(self.Y))
+        self.VAR=N.zeros(len(self.Y))
+        A=N.array([1.,beta,alpha1,alpha2,alpha3])
+        for sn in range(len(self.Y)):
+            numerateur= (self.Y[sn] - MB -beta*self.data[sn,0] - alpha1*self.data[sn,1] - alpha2*self.data[sn,2]- alpha3*self.data[sn,3])
+            denominateur=(A.dot(N.dot(self.data_cov[sn],A.reshape(1,len(A)).T)))+self.disp_intrinseque**2+self.dmz[sn]**2
+            chi2[sn]=numerateur**2/denominateur
+            self.residu[sn]=numerateur
+            self.VAR[sn]=denominateur
+        self.chi2=N.sum(chi2)
+
+    def Minuit_chi2(self):
+
+        def _compute_chi2(alpha1,alpha2,alpha3,beta,mb):
+            self.comp_chi2(alpha1,alpha2,alpha3,beta,mb)
+            return self.chi2
+
+        Find_param=minuit.Minuit(_compute_chi2, alpha1=0,alpha2=0,alpha3=0,beta=0,mb=0)
+            
+        Find_param.migrad()
+        self.Params=Find_param.values
+        self.Params_Covariance=Find_param.covariance
+        self.comp_chi2(self.Params['alpha1'],self.Params['alpha2'],self.Params['alpha3'],self.Params['beta'],self.Params['mb'])
+
+        calls=0
+        if abs((self.chi2/(self.dof))-1.)>0.1:
+            while abs((self.chi2/(self.dof))-1.)>0.001:
+        
+                if calls<100:
+                    print 'je cherche de la dispersion pour la %i eme fois'%(calls+1)
+                    self._compute_dispertion()
+                    self.dispertion_intrinseque=copy.deepcopy(self.disp)
+                    Find_param=minuit.Minuit(_compute_chi2, alpha1=0,alpha2=0,alpha3=0,beta=0,mb=0)
+                
+                    Find_param.migrad()
+                    self.Params=Find_param.values
+                    self.Params_Covariance=Find_param.covariance
+                    self.comp_chi2(self.Params['alpha1'],self.Params['alpha2'],self.Params['alpha3'],self.Params['beta'],self.Params['mb'])
+                    calls+=1
+
+                else:
+                    print 'error : calls limit are exceeded'
+                break
+        self.y_corrected=self.residu+self.Params['mb']
+        self.y_error_corrected=N.sqrt(self.VAR-self.disp_intrinseque**2)
+        self.WRMS,self.WRMS_err=comp_rms(self.residu, self.dof, err=True, variance=self.VAR)
+            
+    def _compute_dispertion(self):
+        self.disp=copy.deepcopy(self.disp_intrinseque)
+        self.disp=optimize.fmin(self._disp_function,self.disp)[0]
+             
+    def _disp_function(self,d):
+        self.disp_intrinseque=d
+        self.comp_chi2(self.Params['alpha1'],self.Params['alpha2'],self.Params['alpha3'],self.Params['beta'],self.Params['mb'])
+        return abs((self.chi2/self.dof)-1.)
+
+    def Make_hubble_diagram(self):
+        self.Minuit_chi2()
+
+class hubble_sugar(Hubble_diagram_sugar):
+
+    def __init__(self):
+
+        dic = cPickle.load(open('data_output/sugar_parameters.pkl'))
+        
+        cov = N.zeros((len(dic.keys()),5,5))
+        data = N.zeros((len(dic.keys()),4))
+        sn_name = dic.keys()
+        mb = N.zeros(len(dic.keys()))
+
+        for i in range(len(dic.keys())):
+            data[i,0] = dic[sn_name[i]]['Av']
+            data[i,1] = dic[sn_name[i]]['q1']
+            data[i,2] = dic[sn_name[i]]['q2']
+            data[i,3] = dic[sn_name[i]]['q3']
+            cov[i] = dic[sn_name[i]]['cov_q']
+            mb[i] = dic[sn_name[i]]['grey']
+        
+        Hubble_diagram_sugar.__init__(self,mb,data,cov,N.zeros(len(dic.keys())))
+        self.Make_hubble_diagram()
+
+
         
 if __name__=="__main__":
 
     dic = cPickle.load(open('data_output/emfa_output.pkl'))
     sn_name = N.array(dic['sn_name'])[dic['filter']]
 
+    hss = hubble_sugar()
     hs = hubble_salt2(sn_name=sn_name)
     dic = cPickle.load(open('data_output/sugar_parameters.pkl'))
-    grey = N.array([dic[sn]['grey'] for sn in dic.keys()])
+    grey = hss.residu#N.array([dic[sn]['grey'] for sn in dic.keys()])
 
+    print len(grey)
+    print len(hs.residu)
+    
     binning = N.linspace(-0.55,0.40,10)
 
     import pylab as P
@@ -222,17 +329,6 @@ if __name__=="__main__":
     P.xlabel('residuals (mag)',fontsize=20)
     P.legend()
 
-    dico = cPickle.load(open('../../sngc/sngc/residal_for_maria.pkl'))
-    sn_lssfr = dico['sn_name']
-    lssfr = dico['LsSFR']
-
-    Filtre = N.array([True]*len(dic.keys()))
-    SN = dic.keys()
-    host = N.array([N.nan]*len(SN))
-    for i in range(len(Filtre)):
-        for j in range(len(lssfr)):
-            if SN[i] == sn_lssfr[j]:
-                host[i] = lssfr[j]
             
         
 

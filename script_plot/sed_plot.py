@@ -156,9 +156,11 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
     ml_c.Multilinearfit(adddisp=True)
     ml_x0.Multilinearfit(adddisp=True)
 
-    param_salt = [c,x1,x0]
+    hr = sugar.hubble_salt2(sn_name=lds.sn_name[Filtre])
+    
+    param_salt = [c,x1,hr.residu]
     param_salt_err = [c_err,x1_err,x0_err]
-    param_salt_name = ['$C$','$X_1$','$-2.5 \log_{10}(X_0) - \mu + Cst.$']
+    param_salt_name = ['$C$','$X_1$','$\Delta \mu$ SALT2']
     param_sugar = [grey,q1,q2,q3,av]
     param_sugar_name = ['$\Delta M_{grey}$','$q_1$','$q_2$','$q_3$','$A_V$']
 
@@ -170,8 +172,8 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
     ind_salt = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2]
     ind_sugar = [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4]
 
-    sticks_salt = [N.linspace(-0.1,0.4,6),N.linspace(-2,2,5),N.linspace(-0.5,1.5,5)]
-    sticks_sugar = [N.linspace(-0.4,0.2,4),N.linspace(-3,3,7),N.linspace(-4,4,5),N.linspace(-2,2,5),N.linspace(-0.5,1,4)]
+    sticks_salt = [N.linspace(-0.1,0.4,6),N.linspace(-2,2,5),N.linspace(-0.5,0.5,3)]
+    sticks_sugar = [N.linspace(-0.4,0.4,5),N.linspace(-3,3,7),N.linspace(-4,4,5),N.linspace(-2,2,5),N.linspace(-0.5,1,4)]
 
     fig = P.figure(figsize=(14,8))
     P.subplots_adjust(left=0.06,top=0.97,right=0.91,wspace=0.,hspace=0.)
@@ -183,6 +185,7 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
     
     for i in range(15):
         P.subplot(3,5,i+1)
+        print len(param_sugar[ind_sugar[i]]), len(param_salt[ind_salt[i]])
         rho = N.corrcoef(param_sugar[ind_sugar[i]],param_salt[ind_salt[i]])[0,1]
         signi = Statistics.correlation_significance(abs(rho),len(param_sugar[ind_sugar[i]]),sigma=True)
 
@@ -960,21 +963,24 @@ def wRMS_sed_time_sugar_salt(WRMS='wrms.pkl'):
 if __name__=='__main__':
 
 
-    ##compare_sel_sucre(plot_slopes=False)
+    compare_sel_sucre(plot_slopes=False)
 
     ##plot_corr_sucre()
     
     #wRMS_sed_sugar_salt(WRMS=None)
-    wRMS_sed_time_sugar_salt(WRMS='wrms_time.pkl')
+    #P.show()
+    #wRMS_sed_time_sugar_salt(WRMS=None)#'wrms_time.pkl')
     
     #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
     #SED.plot_spectrophtometric_effec_time(comp=0)
+    #P.savefig('alpha1.pdf')
     #SED.plot_spectrophtometric_effec_time(comp=1)
+    #P.savefig('alpha2.pdf')
     #SED.plot_spectrophtometric_effec_time(comp=2)
-
+    #P.savefig('alpha3.pdf')
 
     #Compare_TO_SUGAR_parameter()
-
+    #P.savefig('max_vs_sugar.pdf')
     #dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
     #rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
@@ -992,7 +998,7 @@ if __name__=='__main__':
     #for sn in dic.keys():
     #rp.plot_spectra_movie(sn)
     #sn = 'SN2007kk'
-    #rp.plot_spectra_reconstruct(sn,T_min=-11,T_max=47)
+    #rp.plot_spectra_reconstruct(sn,T_min=-5,T_max=29.)
     
     #P.savefig('plot_paper/reconstruct/'+sn+'.pdf')
     #sucre, sucre1, sucre2,  sel, res_error = rp.plot_spectra_reconstruct_residuals(sn,T_min=-5,T_max=28)
