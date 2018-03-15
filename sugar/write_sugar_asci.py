@@ -20,7 +20,8 @@ for Bin in range(len(dic['m0'])):
                                                                                       dic['alpha'][Bin,0],
                                                                                       dic['alpha'][Bin,1],
                                                                                       dic['alpha'][Bin,2],
-                                                                                      sugar.extinctionLaw(dic['X'][Bin],Rv=dic_at_max['RV']),
+                                                                                      sugar.extinctionLaw(dic['X'][Bin],
+                                                                                                          Rv=dic_at_max['RV']),
                                                                                       1)))
 
 

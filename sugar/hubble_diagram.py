@@ -2,6 +2,7 @@
 
 import sugar
 import numpy as N
+import pylab as P
 import os 
 import copy
 import cPickle
@@ -178,7 +179,8 @@ class hubble_salt2(Hubble_diagram):
             for sn in range(len(lds.sn_name)):
                 if lds.sn_name[sn] not in sn_name:
                     Filtre[sn] = False
-        
+                    
+        self.sn_name = lds.sn_name[Filtre]
         cov = N.zeros((N.sum(Filtre),3,3))
         data = N.zeros((N.sum(Filtre),2))
         data[:,0] = lds.X1[Filtre]
@@ -196,6 +198,28 @@ class hubble_salt2(Hubble_diagram):
         
         Hubble_diagram.__init__(self,lds.mb[Filtre],data,cov,lds.zhelio[Filtre],lds.zcmb[Filtre],lds.zerr[Filtre])
         self.Make_hubble_diagram()
+
+    def comp_mass_step(self,host_pkl='data_input/Host.pkl'):
+
+        import modefit
+        dic_Host = cPickle.load(open(host_pkl))
+        mass = N.zeros(len(self.residu))
+        
+        FIG = P.figure(figsize=(9,6))
+        for i in range(len(self.sn_name)):
+            mass[i] = dic_Host[self.sn_name[i]]['mchost.mass']
+        Filtre = (mass!=0)
+        print mass
+        step = modefit.stepfit(mass[Filtre], self.residu[Filtre], N.sqrt(self.VAR[Filtre]),
+                               proba=None, dx=None, xcut=10., masknan=True, names=None)
+        step.fit()
+        self.plot = step.show(figure = FIG)
+        ax = self.plot['ax'][0]
+        ax.set_ylim(-0.6,0.6)
+        ax.set_ylabel('$\Delta \mu$ SALT2',fontsize=16)
+        ax.set_xlabel('$\log(M/M_{\odot})$',fontsize=16)
+        self.plot['fig'].subplots_adjust(top=0.97,right=0.99)
+        print 'SALT step: ', step.modelstep
 
 class Hubble_diagram_sugar:
 
@@ -273,8 +297,11 @@ class Hubble_diagram_sugar:
         self.comp_chi2(self.Params['alpha1'],self.Params['alpha2'],self.Params['alpha3'],self.Params['beta'],self.Params['mb'])
         return abs((self.chi2/self.dof)-1.)
 
+    
     def Make_hubble_diagram(self):
         self.Minuit_chi2()
+
+
 
 class hubble_sugar(Hubble_diagram_sugar):
 
@@ -286,7 +313,7 @@ class hubble_sugar(Hubble_diagram_sugar):
         data = N.zeros((len(dic.keys()),4))
         sn_name = dic.keys()
         mb = N.zeros(len(dic.keys()))
-
+        self.sn_name = sn_name
         for i in range(len(dic.keys())):
             data[i,0] = dic[sn_name[i]]['Av']
             data[i,1] = dic[sn_name[i]]['q1']
@@ -298,7 +325,31 @@ class hubble_sugar(Hubble_diagram_sugar):
         Hubble_diagram_sugar.__init__(self,mb,data,cov,N.zeros(len(dic.keys())))
         self.Make_hubble_diagram()
 
+    def comp_mass_step(self,host_pkl='data_input/Host.pkl'):
 
+        import modefit
+
+        dic_Host = cPickle.load(open(host_pkl))
+        mass = N.zeros(len(self.residu))
+
+        for i in range(len(self.sn_name)):
+            mass[i] = dic_Host[self.sn_name[i]]['mchost.mass']
+        Filtre = (mass!=0)
+
+        FIG = P.figure(figsize=(9,6))
+        
+        step = modefit.stepfit(mass[Filtre], self.residu[Filtre], N.sqrt(self.VAR[Filtre]),
+                               proba=None, dx=None, xcut=10., masknan=True, names=None)
+
+        step.fit()
+        self.plot = step.show(figure = FIG)
+        ax = self.plot['ax'][0]
+        ax.set_ylim(-0.6,0.6)
+        ax.set_ylabel('$\Delta \mu$ SUGAR',fontsize=16)
+        ax.set_xlabel('$\log(M/M_{\odot})$',fontsize=16)
+        self.plot['fig'].subplots_adjust(top=0.97,right=0.99)
+
+        print 'SUGAR step: ', step.modelstep
         
 if __name__=="__main__":
 
@@ -306,7 +357,9 @@ if __name__=="__main__":
     sn_name = N.array(dic['sn_name'])[dic['filter']]
 
     hss = hubble_sugar()
+    hss.comp_mass_step(host_pkl='data_input/Host.pkl')
     hs = hubble_salt2(sn_name=sn_name)
+    hs.comp_mass_step(host_pkl='data_input/Host.pkl')
     dic = cPickle.load(open('data_output/sugar_parameters.pkl'))
     grey = hss.residu#N.array([dic[sn]['grey'] for sn in dic.keys()])
 
@@ -322,13 +375,13 @@ if __name__=="__main__":
     from matplotlib.patches import Ellipse
 
     P.figure()
-    P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residual (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
-    P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR $\Delta M_{Grey}$ (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
+    P.hist(hs.residu,bins=binning,color='r',histtype='step',lw=5, label = 'SALT2 Hubble Residuals (STD = %.2f mag)'%(N.std(hs.residu)),alpha=0.7)
+    P.hist(grey,bins=binning,color='b',histtype='step',lw=5,label = 'SUGAR Hubble Residuals (STD = %.2f mag)'%(N.std(grey)),alpha=0.7)
     P.ylim(0,50)
     P.ylabel('# of SNIa',fontsize=20)
     P.xlabel('residuals (mag)',fontsize=20)
     P.legend()
-
+    P.show()
             
         
 

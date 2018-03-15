@@ -11,10 +11,11 @@ import os
 
 class load_data_to_build_sugar:
 
-    def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', filtre=True):
+    def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', ncomp=3, filtre=True):
 
         self.path_output = path_output
         self.path_output_gp = path_output_gp
+        self.ncomp = ncomp
 
         dicpca = cPickle.load(open(os.path.join(self.path_output,'emfa_output.pkl')))
         pca_sn_name = np.array(dicpca['sn_name'])
@@ -54,13 +55,13 @@ class load_data_to_build_sugar:
 
         self.number_bin_wavelength = len(wavelength)/self.number_bin_phase
 
-    def compute_EM_PCA_data(self,number_eigenvector=3):
+    def compute_EM_PCA_data(self):
 
         dat = self.pca_Norm_data
         err = self.pca_Norm_err
 
-        new_base = sugar.passage(dat,err,self.pca_vec,sub_space=number_eigenvector)
-        cov_new_err = sugar.passage_error(err,self.pca_vec,number_eigenvector)
+        new_base = sugar.passage(dat,err,self.pca_vec,sub_space=self.ncomp)
+        cov_new_err = sugar.passage_error(err,self.pca_vec,self.ncomp)
 
         self.data = new_base
         self.Cov_error = cov_new_err
@@ -104,7 +105,7 @@ class load_data_to_build_sugar:
         self.Y_cardelli_corrected_cosmo_corrected = np.zeros((len(self.sn_name),len(self.X)))
         self.Y_cosmo_corrected = np.zeros((len(self.sn_name),len(self.X)))
         self.CovY = []
-        
+
         for i,sn in enumerate(self.sn_name):
             print sn
             self.Y_cosmo_corrected[i], self.Y_cardelli_corrected_cosmo_corrected[i] = (self.load_spectra_GP(sn))
@@ -118,9 +119,9 @@ class load_data_to_build_sugar:
 
 class make_sugar(load_data_to_build_sugar):
 
-    def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', filtre=True):
+    def __init__(self, path_output='data_output/', path_output_gp='data_output/gaussian_process/', filtre=True, ncomp=3):
 
-        load_data_to_build_sugar.__init__(self, path_output=path_output, path_output_gp=path_output_gp, filtre=filtre)
+        load_data_to_build_sugar.__init__(self, path_output=path_output, path_output_gp=path_output_gp, filtre=filtre, ncomp=ncomp)
         self.compute_EM_PCA_data()
         self.load_spectra()
 
@@ -143,8 +144,11 @@ class make_sugar(load_data_to_build_sugar):
         
     def write_model_output(self):
 
-        pkl = os.path.join(self.path_output,'sugar_model.pkl')
-
+        if self.ncomp ==3: 
+            pkl = os.path.join(self.path_output,'sugar_model.pkl')
+        else:
+            pkl = os.path.join(self.path_output,'sugar_model_%i.pkl'%(self.ncomp))
+            
         dic = {'alpha':self.sedfit.alpha,
                'm0':self.sedfit.m0,
                'delta_m_grey':self.sedfit.delta_m_grey,
@@ -161,6 +165,6 @@ class make_sugar(load_data_to_build_sugar):
 
 if __name__ == '__main__':
 
-    ld = make_sugar()
+    ld = make_sugar(ncomp = 5)
     ld.launch_sed_fitting()
     ld.write_model_output()

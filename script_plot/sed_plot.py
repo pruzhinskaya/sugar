@@ -390,9 +390,9 @@ class residual_plot:
             self.dicSA=None
         dic_at_max=cPickle.load(open(dic_at_max))
 	self.Rv=dic_at_max['RV']
-	SUGAR=N.loadtxt(SUGAR_model)
-	self.M0=SUGAR[:,2]
-	self.alpha=SUGAR[:,3:6]
+	SUGAR=cPickle.load(open(SUGAR_model))
+	self.M0=SUGAR['m0']
+	self.alpha=SUGAR['alpha']
 
 
     def plot_spectra_reconstruct(self,sn,T_min=PHASE_MIN,T_max=PHASE_MAX):
@@ -452,7 +452,7 @@ class residual_plot:
         for Bin in range(NBIN):
             SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*NPHASE:(Bin+1)*NPHASE])
             Reconstruction[:,Bin]+=SPLINE_Mean(Phase)
-            for i in range(3):
+            for i in range(len(self.alpha[0])):
                 SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*NPHASE:(Bin+1)*NPHASE])
             
                 Reconstruction[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
@@ -550,7 +550,7 @@ class residual_plot:
         for Bin in range(NBIN):
             SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*NPHASE:(Bin+1)*NPHASE])
             SUGAR[:,Bin]+=SPLINE_Mean(time_movie)
-            for i in range(3):
+            for i in range(len(self.alpha[0])):
                 SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*NPHASE:(Bin+1)*NPHASE])
             
                 SUGAR[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(time_movie)
@@ -713,7 +713,7 @@ class residual_plot:
             Reconstruction[:,Bin]+=SPLINE_Mean(Phase)
             rec1[:,Bin]+=SPLINE_Mean(Phase)
             rec2[:,Bin]+=SPLINE_Mean(Phase)
-            for i in range(3):
+            for i in range(len(self.alpha[0])):
                 SPLINE=inter.InterpolatedUnivariateSpline(Time,self.alpha[:,i][Bin*NPHASE:(Bin+1)*NPHASE])
                 Reconstruction[:,Bin]+=self.dicS[sn]['q%i'%(i+1)]*SPLINE(Phase)
                 if i==0:
@@ -777,7 +777,7 @@ def wRMS_sed_sugar_salt(WRMS='wrms.pkl'):
         dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
         rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
-                           '../sugar/data_output/SUGAR_model_v1.asci',
+                           '../sugar/data_output/sugar_model.pkl',
                            '../sugar/data_output/sugar_parameters.pkl',
                            '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl',
                            dic_salt = '../sugar/data_input/file_pf_bis.pkl')
@@ -862,7 +862,7 @@ def wRMS_sed_time_sugar_salt(WRMS='wrms.pkl'):
         dic = cPickle.load(open('../sugar/data_output/sugar_parameters.pkl'))
     
         rp = residual_plot('../sugar/data_input/spectra_snia.pkl',
-                           '../sugar/data_output/SUGAR_model_v1.asci',
+                           '../sugar/data_output/sugar_model.pkl',
                            '../sugar/data_output/sugar_parameters.pkl',
                            '../sugar/data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl',
                            dic_salt = '../sugar/data_input/file_pf_bis.pkl')
@@ -957,18 +957,67 @@ def wRMS_sed_time_sugar_salt(WRMS='wrms.pkl'):
     P.legend(bbox_to_anchor=(1.01, 0.7), loc=2, borderaxespad=0.,fontsize=16)
     P.show()
 
+def plot_M0_time(sugar_asci, comp = 0):
+
+    sugar = N.loadtxt(sugar_asci)
+    YLABEL = ['$M_0(\lambda)$ + cst','$\\alpha_1(\lambda)$', '$\\alpha_2(\lambda)$','$\\alpha_3(\lambda)$']
+    CST = [19, 0, 0, 0]
+    reorder = N.arange(197*21).reshape(197, 21).T.reshape(-1)
+    X=sugar[:,1][reorder]
+    M0=sugar[:,2+comp][reorder]
+    P.figure(figsize=(12,10))
+    P.subplots_adjust(right=0.99, top=0.95)
+    compt=0
+    XLAB=[1,2,3,4]
+    YLAB=[2,4,6]
+
+    for i in range(19):
+        if (-12+(3*i))%12==0 and compt<7:
+            P.subplot(3,2,compt+1)
+            print compt + 1
+            print (-12+(3*i))
+            print ''
+            P.plot(X[i*197:(i+1)*197],M0[i*197:(i+1)*197]+CST[comp],'k', lw=3)
+            if (-12+(3*i))!=0:
+                P.title('Phase = %i days'%((-12+(3*i))),fontsize=20)
+            else:
+                P.title('Phase = %i days'%((-12+(3*i))),fontsize=20)
+            if compt+1 in XLAB:
+                P.xticks([2500.,9500.],['toto','pouet'])
+            else:
+                P.xlabel('wavelength $[\AA]$', fontsize=20)
+            if compt+1 in YLAB:
+                    print 'prout'
+            else:
+                P.ylabel(YLABEL[comp],fontsize=20)
+            P.xlim(3200,8800)
+            P.gca().invert_yaxis()
+            compt+=1
+        if i==18:
+            P.subplot(3,2,compt+1)
+            P.plot(X[i*197:(i+1)*197],M0[i*197:(i+1)*197]+CST[comp],'k',lw=3)
+            P.title('Phase = 42 days',fontsize=20)
+            P.xlabel('wavelength $[\AA]$',fontsize=20)
+            P.xlim(3200,8800)
+            P.gca().invert_yaxis()
+            compt+=1
+
     
     
 
 if __name__=='__main__':
 
+    #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 0)
+    #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 1)
+    #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 2)
+    #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 3)
 
-    compare_sel_sucre(plot_slopes=False)
-
+    #compare_sel_sucre(plot_slopes=False)
+    
     ##plot_corr_sucre()
     
-    #wRMS_sed_sugar_salt(WRMS=None)
-    #P.show()
+    wRMS_sed_sugar_salt(WRMS=None)
+    P.show()
     #wRMS_sed_time_sugar_salt(WRMS=None)#'wrms_time.pkl')
     
     #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
