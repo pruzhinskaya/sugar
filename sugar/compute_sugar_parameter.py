@@ -36,11 +36,11 @@ class aligne_SED:
     def align_SED(self):
         Time=N.linspace(-12,48,21)
         DELTA=len(self.Phase)
-        self.SED=N.ones((197*len(self.Phase),6))
+        self.SED=N.ones((197*len(self.Phase),3+len(self.Alpha[0])))
         for Bin in range(197):
             SPLINE_Mean=inter.InterpolatedUnivariateSpline(Time,self.M0[Bin*21:(Bin+1)*21])
             self.SED[:,0][Bin*DELTA:(Bin+1)*DELTA]=SPLINE_Mean(self.Phase)
-            for i in range(3):
+            for i in range(len(self.Alpha[0])):
                 SPLINE=inter.InterpolatedUnivariateSpline(Time,self.Alpha[:,i][Bin*21:(Bin+1)*21])
                 self.SED[:,i+3][Bin*DELTA:(Bin+1)*DELTA]=SPLINE(self.Phase)
             self.SED[:,2][Bin*DELTA:(Bin+1)*DELTA]=sugar.extinctionLaw(self.dic[self.sn]['0']['X'][Bin],Rv=self.Rv)
@@ -111,7 +111,7 @@ if __name__=="__main__":
     
     
     dic_at_max = cPickle.load(open('data_output/sugar_paper_output/model_at_max_3_eigenvector_without_grey_save_before_PCA.pkl'))
-    dic_sed = cPickle.load(open('data_output/sugar_model.pkl'))
+    dic_sed = cPickle.load(open('data_output/sugar_model_5.pkl'))
     SPECTRA = 'data_input/spectra_snia.pkl'
 
     HH = []
@@ -135,8 +135,10 @@ if __name__=="__main__":
                          'q1':h[2],
                          'q2':h[3],
                          'q3':h[4],
+                         'q4':h[5],
+                         'q5':h[6],
                          'cov_q':cov_h}})
         
-    File=open('data_output/sugar_parameters.pkl','w')
+    File=open('data_output/sugar_parameters_5.pkl','w')
     cPickle.dump(dic,File)
     File.close()

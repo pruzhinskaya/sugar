@@ -1,4 +1,4 @@
-"""plot emfa result on spectral feaAtures at max."""
+"""plot emfa result on spectral features at max."""
 
 from ToolBox import Statistics
 from ToolBox import MPL

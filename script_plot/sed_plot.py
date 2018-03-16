@@ -222,6 +222,76 @@ def compare_sel_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters
 
 
 
+def compare_host_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl', dic_host='../sugar/data_input/Host.pkl'):
+
+    dico = cPickle.load(open(SUGAR_parameter_pkl))
+    dic_host = cPickle.load(open(dic_host))
+    sn_name = N.array(dico.keys())
+    grey = N.zeros(len(sn_name))
+    q1 = N.zeros(len(sn_name))
+    q2 = N.zeros(len(sn_name))
+    q3 = N.zeros(len(sn_name))
+    av = N.zeros(len(sn_name))
+    host = N.zeros(len(sn_name))
+
+    for i in range(len(sn_name)):
+        sn = sn_name[i]
+        if sn in dico.keys():
+            grey[i] = dico[sn]['grey']
+            q1[i] = dico[sn]['q1']
+            q2[i] = dico[sn]['q2']
+            q3[i] = dico[sn]['q3']
+            av[i] = dico[sn]['Av']
+            host[i] = dic_host[sn]['mchost.mass']
+    Filtre = (host != 0)
+    grey = grey[Filtre]
+    q1 = q1[Filtre]
+    q2 = q2[Filtre]
+    q3 = q3[Filtre]
+    av = av[Filtre]
+    host = host[Filtre]
+
+    fig = P.figure(figsize=(14,6))
+    ax = fig.add_axes([0.06,0.85,0.93,0.05])
+    P.subplots_adjust(left=0.06,top=0.77,right=0.99,wspace=0.,hspace=0.)
+    cmap = P.cm.get_cmap('Blues',6)
+    cmap.set_over('r')
+    bounds = [0, 1, 2, 3, 4, 5]
+    import matplotlib
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+    param_sugar = [q1, q2, q3, av]
+    label_sugar = ['$q_1$', '$q_2$', '$q_3$', '$A_V$']
+    ticks_sugar = [N.linspace(-4,3,8), N.linspace(-4,3,8), N.linspace(-2,2,5), N.linspace(-0.5,1,4)]
+    for i in range(4):
+        P.subplot(1,4,i+1)
+        rho = N.corrcoef(host,param_sugar[i])[0,1]
+        signi = Statistics.correlation_significance(abs(rho),len(param_sugar[i]),sigma=True)
+        print label_sugar[i], rho, signi
+        scat = P.scatter(param_sugar[i],host,s=50,cmap=cmap,
+                         c=N.ones_like(param_sugar[i])*signi,vmin = 0, vmax = 6)
+        if i == 0:
+            P.ylabel('$\log(M/M_{\odot})$',fontsize=20)
+        else:
+            P.yticks([],[])
+            
+        P.xlabel(label_sugar[i], fontsize=20)
+        P.xticks(ticks_sugar[i])
+    #cbar_ax = fig.add_axes([0.93, 0.1, 0.02, 0.87])
+    #cax, kw = matplotlib.colorbar.make_axes(ax, orientation='horizontal',
+    #                                        pad=0.02)
+    cb = matplotlib.colorbar.ColorbarBase(ax, cmap=cmap,
+                                          norm=norm,
+                                          boundaries=bounds+[9],
+                                          extend='max',
+                                          ticks=bounds,
+                                          spacing='proportional',
+                                          orientation='horizontal')
+                                            
+    cb.set_label('Pearson correlation coefficient significance ($\sigma$)',fontsize=20,labelpad=-70)
+
+
+
 def plot_corr_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl'):
 
     dico = cPickle.load(open(SUGAR_parameter_pkl))
@@ -1007,6 +1077,8 @@ def plot_M0_time(sugar_asci, comp = 0):
 
 if __name__=='__main__':
 
+    compare_host_sucre(SUGAR_parameter_pkl='../sugar/data_output/sugar_parameters.pkl', dic_host='../sugar/data_input/Host.pkl')
+    
     #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 0)
     #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 1)
     #plot_M0_time('../sugar/data_output/SUGAR_model_v1.asci', comp = 2)
@@ -1016,8 +1088,8 @@ if __name__=='__main__':
     
     ##plot_corr_sucre()
     
-    wRMS_sed_sugar_salt(WRMS=None)
-    P.show()
+    #wRMS_sed_sugar_salt(WRMS=None)
+    #P.show()
     #wRMS_sed_time_sugar_salt(WRMS=None)#'wrms_time.pkl')
     
     #SED=SUGAR_plot('../sugar/data_output/sugar_model.pkl')
