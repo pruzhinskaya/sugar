@@ -28,7 +28,7 @@ class load_data_bin_gp:
 
         self.mean_time = []
         self.mean = []
-        self.mean_wavelegth = []
+        self.mean_wavelength = []
 
         self.diff = []
 
@@ -59,7 +59,7 @@ class load_data_bin_gp:
             self.time.append(time)
 
 
-    def load_mean_bin(self, number_bin, average=True):
+    def load_mean_bin(self, number_bin, average=True,average_file=None):
         """
         Load the light curve average for the specific wavelength.
         """
@@ -71,7 +71,10 @@ class load_data_bin_gp:
         path = os.path.dirname(sugar.__file__)
         
         if average:
-            mean_file = os.path.join(self.path_input, 'mean_gaussian_process.dat')
+            if average_file is None:
+                mean_file = os.path.join(self.path_input, 'mean_gaussian_process.dat')
+            else:
+                mean_file = average_file
             data = np.loadtxt(mean_file)
             number_points = len(data[:,0]) / nnumber_bin
             y = np.zeros(number_points)
@@ -82,7 +85,7 @@ class load_data_bin_gp:
             time = data[number_points * number_bin: (number_points * number_bin) + number_points, 0]
             wavelength = data[number_points * number_bin: (number_points * number_bin) + number_points, 1]
         else:
-            mean_file = cPickle.load(open(path + '/data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl'))
+            mean_file = cPickle.load(open(os.path.join(path, 'data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl')))
             y = mean_file['bin%i'%(number_bin)]['mean']
             time = mean_file['bin%i'%(number_bin)]['time']
             wavelength = np.ones(len(y)) * mean_file['bin%i'%(number_bin)]['wavelength']
@@ -103,7 +106,7 @@ class load_data_bin_gp:
             mean_file = os.path.join(self.path_input,'mean_gaussian_process.dat')
             data = np.loadtxt(mean_file)
         else:
-            data = cPickle.load(open(path + '/data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl'))
+            data = cPickle.load(open(os.path.join(path ,'/data_output/gaussian_process/mean_sed_snia_from_gaussian_process.pkl')))
             
         delta_mean = 0
         delta_lambda = 0
@@ -151,7 +154,7 @@ class gp_sed:
     """Interpolate snia sed using gaussian process."""
     def __init__(self, path_input = path + '/data_input/',
                  grid_interpolation=np.linspace(-12,48,21),
-                 svd_method=False, average=True, double_average=True):
+                 svd_method=False, average=True, double_average=True,average_file=None):
         """
         Inteporlation of sed with gaussian process.
 
@@ -176,6 +179,7 @@ class gp_sed:
             self.diff = np.zeros_like(self.ldbg.diff)
             
         self.average = average
+        self.average_file=average_file
         
         self.sigma = np.zeros(len(self.wavelength))
         self.l = np.zeros(len(self.wavelength))
@@ -205,7 +209,7 @@ class gp_sed:
             print i+1,'/',len(self.wavelength)
 
             self.ldbg.load_data_bin(i)
-            self.ldbg.load_mean_bin(i,average=self.average)
+            self.ldbg.load_mean_bin(i,average=self.average,average_file=self.average_file)
 
             gpr = cosmogp.gaussian_process_nobject(self.ldbg.y, self.ldbg.time, kernel='RBF1D',
                                                    y_err=self.ldbg.y_err, diff=self.diff, Mean_Y=self.ldbg.mean,
@@ -248,15 +252,15 @@ class gp_sed:
         """
         output_directory = path_output
 
-        fichier = open(output_directory+'sed_snia_gaussian_process.pkl','w')
+        fichier = open(os.path.join(output_directory,'sed_snia_gaussian_process.pkl'),'w')
         cPickle.dump(self.dic, fichier)
         fichier.close()
 
-        mean_file = open(output_directory+'mean_sed_snia_from_gaussian_process.pkl','w')
+        mean_file = open(os.path.join(output_directory,'mean_sed_snia_from_gaussian_process.pkl'),'w')
         cPickle.dump(self.new_mean_gp, mean_file)
         mean_file.close()
 
-        gp_files = open(output_directory+'gp_info.dat','w')
+        gp_files = open(os.path.join(output_directory,'gp_info.dat'),'w')
         gp_files.write('#wavelength kernel_amplitude correlation_length pull_average pull_std pull_number_of_points \n')
 
         for wave in range(len(self.wavelength)):
@@ -267,7 +271,7 @@ class gp_sed:
 
         for sn in range(len(self.sn_name)):
             print sn+1,'/',len(self.sn_name)
-            fichier=open(output_directory + self.sn_name[sn] + '.predict','w')
+            fichier=open(os.path.join(output_directory , self.sn_name[sn] + '.predict'),'w')
             number_bin = len(self.dic[self.sn_name[sn]].keys())
             for Bin in range(number_bin):
                 dic = self.dic[self.sn_name[sn]]['bin%i'%(Bin)]
